@@ -63,7 +63,8 @@ export const NewsAggregator = {
                     }
                 }));
 
-                allNews = newsToTranslate; // Only return translated ones to keep feed clean/relevant
+                // 注释掉这行,保留所有新闻数据,不要只保留前50条
+                // allNews = newsToTranslate; // Only return translated ones to keep feed clean/relevant
             } catch (e) {
                 console.error('Translation service error:', e);
             }
