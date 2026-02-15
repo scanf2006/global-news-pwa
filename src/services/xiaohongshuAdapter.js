@@ -1,15 +1,15 @@
 export const XiaohongshuAdapter = {
     async fetchHotTopics() {
         try {
-            // 尝试从小红书热搜榜获取数据
-            // 注意:小红书的API可能需要认证或有CORS限制
-            const url = 'https://www.xiaohongshu.com/web_api/sns/v1/search/hot_list';
+            // 使用顺为数据的免费小红书热榜API
+            // 接口地址: https://api.itapi.cn/api/hotnews/xiaohongshu
+            // 每10分钟更新一次,提供100次免费额度
+            const url = 'https://api.itapi.cn/api/hotnews/xiaohongshu';
 
             const response = await fetch(url, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': 'https://www.xiaohongshu.com',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
             });
 
@@ -20,13 +20,13 @@ export const XiaohongshuAdapter = {
 
             const data = await response.json();
 
-            // 小红书API返回格式可能为: { data: { items: [ { id, title, ... } ] } }
-            const hotTopics = data?.data?.items || data?.items || [];
-
-            if (hotTopics.length === 0) {
-                console.warn('Xiaohongshu returned empty data, using fallback');
+            // 顺为数据API返回格式: { code: 200, data: [ { title, url, hot, ... } ] }
+            if (data.code !== 200 || !data.data || data.data.length === 0) {
+                console.warn('Xiaohongshu API returned invalid data, using fallback');
                 return this.getFallbackData();
             }
+
+            const hotTopics = data.data;
 
             // 只取前5条
             const top5 = hotTopics.slice(0, 5);
@@ -34,12 +34,12 @@ export const XiaohongshuAdapter = {
             return top5.map((item, index) => ({
                 id: `xiaohongshu-${Date.now()}-${index}`,
                 source: 'Xiaohongshu',
-                titleOriginal: item.title || item.query || item.word || '',
-                titleTranslated: item.title || item.query || item.word || '',
-                url: item.link || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(item.title || item.query || '')}`,
+                titleOriginal: item.title || item.name || '',
+                titleTranslated: item.title || item.name || '',
+                url: item.url || item.link || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(item.title || item.name || '')}`,
                 timestamp: new Date().toISOString(),
-                views: item.hot_value || item.view_count || null,
-                thumbnail: item.cover || item.image || null
+                views: item.hot || item.view_count || item.heat || null,
+                thumbnail: item.pic || item.image || null
             }));
         } catch (error) {
             console.error('XiaohongshuAdapter Error:', error);
