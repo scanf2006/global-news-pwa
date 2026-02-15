@@ -1,75 +1,81 @@
 // YouTube热门视频适配器
-// 使用YouTube Data API v3获取前10热门视频
+// 获取最近7天内观看次数最高的5个视频
 export const YouTubeAdapter = {
     async fetchTrending() {
-        console.log('[YouTube] Starting fetchTrending...');
         try {
             const apiKey = process.env.YOUTUBE_API_KEY || '';
 
-            console.log('[YouTube] API Key status:', apiKey ? `Found (${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)})` : 'NOT FOUND');
-
             if (!apiKey) {
-                console.warn('[YouTube] API key not configured, using fallback videos');
                 return this.getFallbackVideos();
             }
 
-            // YouTube Data API v3 - 获取美国/加拿大热门视频
-            const regionCode = 'US'; // 可选: US, CA, GB等
-            const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=10&key=${apiKey}`;
+            // 计算7天前的日期
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const publishedAfter = sevenDaysAgo.toISOString();
 
-            console.log('[YouTube] Fetching from API...');
+            // 使用search API获取最近7天观看次数最高的视频
+            const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&publishedAfter=${publishedAfter}&maxResults=5&regionCode=US&key=${apiKey}`;
 
-            const response = await fetch(url, {
-                headers: {
-                    'Accept': 'application/json'
-                }
+            const searchResponse = await fetch(searchUrl, {
+                headers: { 'Accept': 'application/json' }
             });
 
-            console.log('[YouTube] Response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`[YouTube] API error (${response.status}):`, errorText);
+            if (!searchResponse.ok) {
+                const errorText = await searchResponse.text();
+                console.error(`[YouTube] Search API error (${searchResponse.status}):`, errorText);
                 return this.getFallbackVideos();
             }
 
-            const data = await response.json();
+            const searchData = await searchResponse.json();
 
-            if (!data.items || data.items.length === 0) {
-                console.warn('[YouTube] API returned no items');
-                console.warn('[YouTube] Response data:', JSON.stringify(data));
+            if (!searchData.items || searchData.items.length === 0) {
                 return this.getFallbackVideos();
             }
 
-            console.log('[YouTube] Successfully fetched', data.items.length, 'videos');
-            console.log('[YouTube] First video:', data.items[0]?.snippet?.title);
+            // 获取视频详细信息(包括统计数据)
+            const videoIds = searchData.items.map(item => item.id.videoId).join(',');
+            const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds}&key=${apiKey}`;
 
-            return data.items.map((item, index) => ({
+            const videosResponse = await fetch(videosUrl, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!videosResponse.ok) {
+                return this.getFallbackVideos();
+            }
+
+            const videosData = await videosResponse.json();
+
+            if (!videosData.items || videosData.items.length === 0) {
+                return this.getFallbackVideos();
+            }
+
+            return videosData.items.map((item, index) => ({
                 id: `youtube-${item.id}-${index}`,
                 source: 'YouTube',
                 titleOriginal: item.snippet.title,
-                titleTranslated: null, // 需要翻译
+                titleTranslated: null,
                 url: `https://www.youtube.com/watch?v=${item.id}`,
                 timestamp: item.snippet.publishedAt || new Date().toISOString(),
                 views: this.formatViews(item.statistics?.viewCount),
-                thumbnail: null // 不显示缩略图,保持一致性
+                thumbnail: null
             }));
         } catch (error) {
             console.error('[YouTube] Exception:', error.message);
-            console.error('[YouTube] Stack:', error.stack);
             return this.getFallbackVideos();
         }
     },
 
     // 格式化观看次数
     formatViews(viewCount) {
-        if (!viewCount) return null;
-
+        if (!viewCount) return '0';
         const count = parseInt(viewCount);
         if (count >= 1000000) {
-            return `${(count / 1000000).toFixed(1)}M`;
-        } else if (count >= 1000) {
-            return `${(count / 1000).toFixed(1)}K`;
+            return (count / 1000000).toFixed(1) + 'M';
+        }
+        if (count >= 1000) {
+            return (count / 1000).toFixed(1) + 'K';
         }
         return count.toString();
     },
