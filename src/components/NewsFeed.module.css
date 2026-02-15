@@ -10,11 +10,11 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(191, 219, 254, 0.95) 0%, rgba(224, 242, 254, 0.95) 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(147, 197, 253, 0.2);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
     margin-bottom: 2rem;
 }
 
