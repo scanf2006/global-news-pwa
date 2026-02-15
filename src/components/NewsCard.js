@@ -1,9 +1,11 @@
 import styles from './NewsCard.module.css';
 
-const getSourceStyle = (source) => {
-    if (source.includes('Reddit')) return styles.sourceReddit;
-    if (source.includes('Twitter') || source.includes('X')) return styles.sourceTwitter;
-    if (source.includes('YouTube')) return styles.sourceYouTube;
+const getBadgeClass = (sourceParam) => {
+    const source = sourceParam.toLowerCase();
+    if (source.includes('reddit')) return styles.sourceReddit;
+    if (source.includes('twitter') || source.includes('x')) return styles.sourceTwitter;
+    if (source.includes('youtube')) return styles.sourceYouTube;
+    if (source.includes('weibo')) return styles.sourceWeibo;
     return styles.sourceNews;
 };
 
@@ -31,7 +33,7 @@ export default function NewsCard({ item }) {
                 </div>
             )}
             <div className={styles.content}>
-                <span className={`${styles.sourceBadge} ${getSourceStyle(item.source)}`}>
+                <span className={`${styles.sourceBadge} ${getBadgeClass(item.source)}`}>
                     {item.source}
                 </span>
                 <h3 className={styles.title}>
