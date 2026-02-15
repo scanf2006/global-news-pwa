@@ -3,16 +3,18 @@ import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
 import { XiaohongshuAdapter } from './xiaohongshuAdapter';
+import { ZhihuAdapter } from './zhihuAdapter';
 
 export const NewsAggregator = {
     async fetchAllNews() {
         try {
-            const [rssNews, redditNews, twitterNews, weiboNews, xiaohongshuNews] = await Promise.allSettled([
+            const [rssNews, redditNews, twitterNews, weiboNews, xiaohongshuNews, zhihuNews] = await Promise.allSettled([
                 RSSAdapter.fetchAll(),
                 RedditAdapter.fetchTrending(),
                 TwitterAdapter.fetchTrending(),
                 WeiboAdapter.fetchHotSearch(),
-                XiaohongshuAdapter.fetchHotTopics()
+                XiaohongshuAdapter.fetchHotTopics(),
+                ZhihuAdapter.fetchHotTopics()
             ]);
 
             let allNews = [];
@@ -22,6 +24,7 @@ export const NewsAggregator = {
             if (twitterNews.status === 'fulfilled') allNews = allNews.concat(twitterNews.value);
             if (weiboNews.status === 'fulfilled') allNews = allNews.concat(weiboNews.value);
             if (xiaohongshuNews.status === 'fulfilled') allNews = allNews.concat(xiaohongshuNews.value);
+            if (zhihuNews.status === 'fulfilled') allNews = allNews.concat(zhihuNews.value);
 
             // Translation Step
             try {
@@ -35,8 +38,8 @@ export const NewsAggregator = {
 
                 await Promise.allSettled(newsToTranslate.map(async (item) => {
                     if (!item.titleOriginal) return;
-                    // 微博和小红书内容已是中文,跳过翻译
-                    if (item.source === 'Weibo' || item.source === 'Xiaohongshu') {
+                    // 微博、小红书和知乎内容已是中文,跳过翻译
+                    if (item.source === 'Weibo' || item.source === 'Xiaohongshu' || item.source === 'Zhihu') {
                         item.titleTranslated = item.titleOriginal;
                         return;
                     }

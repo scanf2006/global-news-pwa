@@ -83,6 +83,11 @@
     background: rgba(255, 36, 66, 0.15);
 }
 
+.sourceZhihu {
+    color: #0084ff;
+    background: rgba(0, 132, 255, 0.15);
+}
+
 .sourceNews {
     color: #10b981;
     background: rgba(16, 185, 129, 0.15);
