@@ -40,14 +40,9 @@ export const NewsAggregator = {
             // Translation Step
             try {
                 const { translate } = require('google-translate-api-x');
-                // Batch translation might be too heavy or flagged, let's try individual for top items or mapped
-                // Actually for better performance/reliability, let's just loop. 
-                // Note: Free Google Translate API has limits. 
 
-                // Parallelize translation with a limit to avoid rate limiting
-                const newsToTranslate = allNews.slice(0, 50); // Translate top 50 only to save resources/time
-
-                await Promise.allSettled(newsToTranslate.map(async (item) => {
+                // 翻译所有新闻,不限制数量
+                await Promise.allSettled(allNews.map(async (item) => {
                     if (!item.titleOriginal) return;
                     // 微博和知乎内容已是中文,跳过翻译
                     if (item.source === 'Weibo' || item.source === 'Zhihu') {
@@ -59,12 +54,13 @@ export const NewsAggregator = {
                         item.titleTranslated = res.text;
                     } catch (e) {
                         // keep original if translation fails
-                        console.error('Translation failed for item:', item.id);
+                        console.error('Translation failed for item:', item.id, e.message);
+                        item.titleTranslated = item.titleOriginal; // 翻译失败时使用原文
                     }
                 }));
 
-                // 注释掉这行,保留所有新闻数据,不要只保留前50条
-                // allNews = newsToTranslate; // Only return translated ones to keep feed clean/relevant
+                // 不要替换allNews,保留所有新闻数据
+                // allNews = newsToTranslate; // 这行代码会丢弃未翻译的新闻!
             } catch (e) {
                 console.error('Translation service error:', e);
             }
