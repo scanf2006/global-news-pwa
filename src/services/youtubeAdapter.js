@@ -79,8 +79,6 @@ export const YouTubeAdapter = {
         const now = new Date().toISOString();
         const baseTime = Date.now();
 
-        console.log('[YouTube] Returning fallback videos');
-
         return [
             {
                 id: `youtube-${baseTime}-0`,
