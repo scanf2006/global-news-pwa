@@ -2,18 +2,18 @@ import { RSSAdapter } from './rssAdapter';
 import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
-import { XiaohongshuAdapter } from './xiaohongshuAdapter';
+import { BilibiliAdapter } from './bilibiliAdapter';
 import { ZhihuAdapter } from './zhihuAdapter';
 
 export const NewsAggregator = {
     async fetchAllNews() {
         try {
-            const [rssNews, redditNews, twitterNews, weiboNews, xiaohongshuNews, zhihuNews] = await Promise.allSettled([
+            const [rssNews, redditNews, twitterNews, weiboNews, bilibiliNews, zhihuNews] = await Promise.allSettled([
                 RSSAdapter.fetchAll(),
                 RedditAdapter.fetchTrending(),
                 TwitterAdapter.fetchTrending(),
                 WeiboAdapter.fetchHotSearch(),
-                XiaohongshuAdapter.fetchHotTopics(),
+                BilibiliAdapter.fetchHotSearch(),
                 ZhihuAdapter.fetchHotTopics()
             ]);
 
@@ -23,7 +23,7 @@ export const NewsAggregator = {
             if (redditNews.status === 'fulfilled') allNews = allNews.concat(redditNews.value);
             if (twitterNews.status === 'fulfilled') allNews = allNews.concat(twitterNews.value);
             if (weiboNews.status === 'fulfilled') allNews = allNews.concat(weiboNews.value);
-            if (xiaohongshuNews.status === 'fulfilled') allNews = allNews.concat(xiaohongshuNews.value);
+            if (bilibiliNews.status === 'fulfilled') allNews = allNews.concat(bilibiliNews.value);
             if (zhihuNews.status === 'fulfilled') allNews = allNews.concat(zhihuNews.value);
 
             // Translation Step
@@ -38,8 +38,8 @@ export const NewsAggregator = {
 
                 await Promise.allSettled(newsToTranslate.map(async (item) => {
                     if (!item.titleOriginal) return;
-                    // 微博、小红书和知乎内容已是中文,跳过翻译
-                    if (item.source === 'Weibo' || item.source === 'Xiaohongshu' || item.source === 'Zhihu') {
+                    // 微博、B站和知乎内容已是中文,跳过翻译
+                    if (item.source === 'Weibo' || item.source === 'Bilibili' || item.source === 'Zhihu') {
                         item.titleTranslated = item.titleOriginal;
                         return;
                     }
