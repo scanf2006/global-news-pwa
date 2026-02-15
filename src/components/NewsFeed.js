@@ -36,7 +36,6 @@ export default function NewsFeed() {
     return (
         <div className={styles.feedContainer}>
             <div className={styles.header}>
-                <h2 className="text-gradient">全球热搜 (Global Trends)</h2>
                 <div className={styles.controls}>
                     {lastUpdated && <span className={styles.lastUpdated}>更新于: {lastUpdated.toLocaleTimeString()}</span>}
                     <button onClick={fetchNews} className={styles.refreshBtn} disabled={loading}>

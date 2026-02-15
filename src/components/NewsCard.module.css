@@ -47,7 +47,10 @@
     display: inline-block;
     padding: 0.25rem 0.5rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     background: rgba(59, 130, 246, 0.2);
@@ -76,7 +79,7 @@
 }
 
 .title {
-    font-size: 1rem;
+    font-size: 1.15rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     line-height: 1.4;
@@ -88,7 +91,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.75rem;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
     color: #94a3b8;
 }
 
@@ -118,9 +123,9 @@
     }
 
     .title {
-        font-size: 1rem;
+        font-size: 1.15rem;
         /* Optimal for mobile list view */
-        line-height: 1.35;
+        line-height: 1.4;
         margin-bottom: 0.35rem;
         display: -webkit-box;
         -webkit-line-clamp: 3;
@@ -130,12 +135,12 @@
     }
 
     .sourceBadge {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
         padding: 0.15rem 0.4rem;
         margin-bottom: 0.35rem;
     }
 
     .meta {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
     }
 }
