@@ -35,15 +35,28 @@ export default function NewsFeed() {
 
     return (
         <div className={styles.feedContainer}>
-            <div className={styles.header}>
-                <div className={styles.controls}>
-                    {lastUpdated && <span className={styles.lastUpdated}>更新于: {lastUpdated.toLocaleTimeString()}</span>}
-                    <button onClick={fetchNews} className={styles.refreshBtn} disabled={loading}>
-                        {loading ? '刷新中...' : '刷新'}
-                    </button>
+            {/* Top Navigation Bar */}
+            <nav className={styles.navbar}>
+                <div className={styles.navContent}>
+                    <div className={styles.brand}>
+                        <span className={styles.logo}>🌐</span>
+                        <h1 className={styles.appName}>Global News</h1>
+                    </div>
+                    <div className={styles.navActions}>
+                        {lastUpdated && (
+                            <span className={styles.lastUpdated}>
+                                更新于: {lastUpdated.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
+                        <button onClick={fetchNews} className={styles.refreshBtn} disabled={loading}>
+                            <span className={styles.refreshIcon}>↻</span>
+                            {loading ? '刷新中...' : '刷新'}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </nav>
 
+            {/* News Grid */}
             {loading && news.length === 0 ? (
                 <div className={styles.grid}>
                     {[...Array(6)].map((_, i) => (
@@ -57,10 +70,15 @@ export default function NewsFeed() {
                     ))}
                 </div>
             )}
-            {/* Version Footer */}
-            <div className={styles.footer}>
-                v0.4.0
-            </div>
+
+            {/* Footer */}
+            <footer className={styles.footer}>
+                <div className={styles.footerContent}>
+                    <span>v0.4.0</span>
+                    <span className={styles.separator}>•</span>
+                    <span>全球热点新闻聚合</span>
+                </div>
+            </footer>
         </div>
     );
 }
