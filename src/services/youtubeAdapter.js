@@ -5,9 +5,9 @@ export const YouTubeAdapter = {
         console.log('[YouTube] Starting fetchTrending...');
         try {
             const apiKey = process.env.YOUTUBE_API_KEY || '';
-            
+
             console.log('[YouTube] API Key status:', apiKey ? `Found (${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)})` : 'NOT FOUND');
-            
+
             if (!apiKey) {
                 console.warn('[YouTube] API key not configured, using fallback videos');
                 return this.getFallbackVideos();
@@ -16,9 +16,9 @@ export const YouTubeAdapter = {
             // YouTube Data API v3 - 获取美国/加拿大热门视频
             const regionCode = 'US'; // 可选: US, CA, GB等
             const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=${regionCode}&maxResults=10&key=${apiKey}`;
-            
+
             console.log('[YouTube] Fetching from API...');
-            
+
             const response = await fetch(url, {
                 headers: {
                     'Accept': 'application/json'
@@ -28,20 +28,22 @@ export const YouTubeAdapter = {
             console.log('[YouTube] Response status:', response.status);
 
             if (!response.ok) {
-                console.warn(`[YouTube] API returned ${response.status}, using fallback`);
+                const errorText = await response.text();
+                console.error(`[YouTube] API error (${response.status}):`, errorText);
                 return this.getFallbackVideos();
             }
 
             const data = await response.json();
-            
+
             if (!data.items || data.items.length === 0) {
-                console.warn('[YouTube] API returned no items, using fallback');
+                console.warn('[YouTube] API returned no items');
+                console.warn('[YouTube] Response data:', JSON.stringify(data));
                 return this.getFallbackVideos();
             }
-            
-            console.log('[YouTube] Returning', data.items.length, 'videos');
+
+            console.log('[YouTube] Successfully fetched', data.items.length, 'videos');
             console.log('[YouTube] First video:', data.items[0]?.snippet?.title);
-            
+
             return data.items.map((item, index) => ({
                 id: `youtube-${item.id}-${index}`,
                 source: 'YouTube',
@@ -53,7 +55,8 @@ export const YouTubeAdapter = {
                 thumbnail: item.snippet.thumbnails?.medium?.url || null
             }));
         } catch (error) {
-            console.error('[YouTube] Error:', error);
+            console.error('[YouTube] Exception:', error.message);
+            console.error('[YouTube] Stack:', error.stack);
             return this.getFallbackVideos();
         }
     },
@@ -61,7 +64,7 @@ export const YouTubeAdapter = {
     // 格式化观看次数
     formatViews(viewCount) {
         if (!viewCount) return null;
-        
+
         const count = parseInt(viewCount);
         if (count >= 1000000) {
             return `${(count / 1000000).toFixed(1)}M`;
@@ -75,9 +78,9 @@ export const YouTubeAdapter = {
     getFallbackVideos() {
         const now = new Date().toISOString();
         const baseTime = Date.now();
-        
+
         console.log('[YouTube] Returning fallback videos');
-        
+
         return [
             {
                 id: `youtube-${baseTime}-0`,
