@@ -52,6 +52,10 @@
     opacity: 1;
 }
 
+.card:hover .imageLoaded {
+    transform: scale(1.05);
+}
+
 .content {
     padding: 1.25rem;
     display: flex;
