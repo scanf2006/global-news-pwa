@@ -59,7 +59,7 @@ export default function NewsFeed() {
             )}
             {/* Version Footer */}
             <div className={styles.footer}>
-                v0.1.0
+                v0.1.1
             </div>
         </div>
     );
