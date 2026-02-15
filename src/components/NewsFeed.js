@@ -46,7 +46,7 @@ export default function NewsFeed() {
             </div>
 
             {loading && news.length === 0 ? (
-                <div className={styles.loadingGrid}>
+                <div className={styles.grid}>
                     {[...Array(6)].map((_, i) => (
                         <div key={i} className={styles.skeletonCard}></div>
                     ))}
