@@ -3,167 +3,76 @@
     position: relative;
     width: 100%;
     max-width: 100%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
-    border-radius: 1.25rem;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    box-shadow:
-        0 8px 32px rgba(59, 130, 246, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.2);
-    padding: 1.25rem;
-    text-decoration: none;
-    color: inherit;
-    box-sizing: border-box;
+    height: 280px;
+    transition: transform 0.5s;
+    cursor: pointer;
 }
 
-.card::before {
-    content: '';
+/* 图片背景层 */
+.imageBox {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-    opacity: 0.6;
-}
-
-.card:hover {
-    transform: translateY(-6px);
-    box-shadow:
-        0 16px 48px rgba(59, 130, 246, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.3);
-    border-color: rgba(59, 130, 246, 0.6);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.25) 100%);
-}
-
-.thumbnailContainer {
-    position: relative;
-    width: 100%;
-    height: 160px;
+    inset: 0;
+    border: 4px solid rgba(0, 0, 0, .2);
+    border-radius: 13px;
     overflow: hidden;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-}
-
-.imagePlaceholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg,
-            rgba(219, 234, 254, 0.8) 0%,
-            rgba(191, 219, 254, 0.8) 50%,
-            rgba(219, 234, 254, 0.8) 100%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
 }
 
 .thumbnail {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-    opacity: 0;
+    border-radius: 10px;
+    transition: opacity 0.5s;
 }
 
-.imageLoaded {
-    opacity: 1;
-}
-
-.card:hover .imageLoaded {
-    transform: scale(1.05);
-}
-
-.content {
-    padding: 1.25rem;
+/* 玻璃覆盖层 */
+.glassOverlay {
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 10px;
+    background: linear-gradient(rgba(255, 255, 255, 0.15), transparent);
+    border: 1px solid rgba(255, 255, 255, .1);
+    box-shadow: 0 15px 15px rgba(0, 0, 0, .25);
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    gap: 0.75rem;
+    justify-content: space-between;
+    padding: 1.25rem;
+    scale: 0;
+    opacity: 0;
+    transition: 0.5s;
+    box-sizing: border-box;
 }
 
-.sourceBadge {
-    display: inline-block;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.75px;
-    background: rgba(59, 130, 246, 0.25);
-    color: #60a5fa;
-    align-self: flex-start;
-    border: 1.5px solid rgba(59, 130, 246, 0.4);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-    transition: all 0.2s ease;
+/* 底部光泽条 */
+.glassOverlay::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.05);
+    pointer-events: none;
 }
 
-.sourceReddit {
-    color: #ff6b35;
-    background: rgba(255, 69, 0, 0.2);
-    border-color: rgba(255, 69, 0, 0.4);
-    box-shadow: 0 2px 8px rgba(255, 69, 0, 0.15);
-}
-
-.sourceTwitter {
-    color: #3b9ff3;
-    background: rgba(29, 161, 242, 0.2);
-    border-color: rgba(29, 161, 242, 0.4);
-    box-shadow: 0 2px 8px rgba(29, 161, 242, 0.15);
-}
-
-.sourceYouTube {
-    color: #ff4444;
-    background: rgba(255, 0, 0, 0.2);
-    border-color: rgba(255, 0, 0, 0.4);
-    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.15);
-}
-
-.sourceWeibo {
-    color: #ffa040;
-    background: rgba(255, 130, 0, 0.2);
-    border-color: rgba(255, 130, 0, 0.4);
-    box-shadow: 0 2px 8px rgba(255, 130, 0, 0.15);
-}
-
-.sourceBilibili {
-    color: #fb7299;
-    background: rgba(251, 114, 153, 0.2);
-    border-color: rgba(251, 114, 153, 0.4);
-    box-shadow: 0 2px 8px rgba(251, 114, 153, 0.15);
-}
-
-.sourceZhihu {
-    color: #40a0ff;
-    background: rgba(0, 132, 255, 0.2);
-    border-color: rgba(0, 132, 255, 0.4);
-    box-shadow: 0 2px 8px rgba(0, 132, 255, 0.15);
-}
-
-.sourceNews {
-    color: #34d399;
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+/* 内容区域 */
+.content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.6;
-    color: #1e293b;
-    flex-grow: 1;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 3;
-    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -172,57 +81,48 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.8125rem;
-    color: #94a3b8;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: auto;
+}
+
+.source {
     font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .views {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    color: rgba(255, 255, 255, 0.6);
 }
 
-@media (max-width: 640px) {
-    .card {
-        flex-direction: row;
-        height: auto;
-        align-items: stretch;
-    }
+/* Hover效果 */
+.card:hover {
+    transform: rotate(-15deg);
+}
 
-    .thumbnailContainer {
-        width: 110px;
-        height: auto;
-        min-height: 110px;
-        flex-shrink: 0;
-    }
+.card:hover .thumbnail {
+    opacity: 0.6;
+}
 
-    .content {
-        padding: 0.75rem;
-        justify-content: center;
-    }
+.card:hover .glassOverlay {
+    transform: rotate(20deg);
+    scale: 1;
+    opacity: 1;
+}
 
-    .title {
-        font-size: 1.25rem;
-        /* Optimal for mobile list view */
-        line-height: 1.4;
-        margin-bottom: 0.35rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+/* 无缩略图时的占位 */
+.placeholderBox {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border: 4px solid rgba(0, 0, 0, .2);
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    .sourceBadge {
-        font-size: 0.9rem;
-        padding: 0.15rem 0.4rem;
-        margin-bottom: 0.35rem;
-    }
-
-    .meta {
-        font-size: 0.9rem;
-    }
+.placeholderIcon {
+    font-size: 3rem;
+    opacity: 0.3;
 }

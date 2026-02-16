@@ -1,54 +1,47 @@
+import Link from 'next/link';
 import styles from './NewsCard.module.css';
 
-const getBadgeClass = (sourceParam) => {
-    const source = sourceParam.toLowerCase();
-    if (source.includes('reddit')) return styles.sourceReddit;
-    if (source.includes('twitter') || source.includes('x')) return styles.sourceTwitter;
-    if (source.includes('youtube')) return styles.sourceYouTube;
-    if (source.includes('weibo')) return styles.sourceWeibo;
-    if (source.includes('zhihu')) return styles.sourceZhihu;
-    return styles.sourceNews;
-};
-
-const formatTime = (isoString) => {
-    try {
-        const date = new Date(isoString);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - date) / 1000);
-
-        if (diffInSeconds < 60) return '刚刚';
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}小时前`;
-        return date.toLocaleDateString();
-    } catch (e) {
-        return '';
-    }
-};
-
 export default function NewsCard({ item }) {
+    const hasThumbnail = item?.thumbnail;
+
     return (
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.card}>
-            {item.thumbnail && (
-                <div className={styles.thumbnailContainer}>
-                    <img src={item.thumbnail} alt={item.titleOriginal} className={styles.thumbnail} loading="lazy" />
+        <Link
+            href={item?.url || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.card}
+        >
+            {/* 图片背景层 */}
+            {hasThumbnail ? (
+                <div className={styles.imageBox}>
+                    <img
+                        src={item.thumbnail}
+                        alt={item.titleTranslated || item.titleOriginal}
+                        className={styles.thumbnail}
+                        loading="lazy"
+                    />
+                </div>
+            ) : (
+                <div className={styles.placeholderBox}>
+                    <span className={styles.placeholderIcon}>📰</span>
                 </div>
             )}
-            <div className={styles.content}>
-                <span className={`${styles.sourceBadge} ${getBadgeClass(item.source)}`}>
-                    {item.source}
-                </span>
-                <h3 className={styles.title}>
-                    {item.titleTranslated || item.titleOriginal}
-                </h3>
+
+            {/* 玻璃覆盖层 */}
+            <div className={styles.glassOverlay}>
+                <div className={styles.content}>
+                    <h3 className={styles.title}>
+                        {item?.titleTranslated || item?.titleOriginal || '无标题'}
+                    </h3>
+                </div>
+
                 <div className={styles.meta}>
-                    <span>{formatTime(item.timestamp)}</span>
-                    {item.views && (
-                        <span className={styles.views}>
-                            🔥 {item.views}
-                        </span>
+                    <span className={styles.source}>{item?.source || '未知来源'}</span>
+                    {item?.views && (
+                        <span className={styles.views}>👁 {item.views}</span>
                     )}
                 </div>
             </div>
-        </a>
+        </Link>
     );
 }
