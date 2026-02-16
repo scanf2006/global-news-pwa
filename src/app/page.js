@@ -72,8 +72,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 可滚动内容区域 */}
-      <main style={{ paddingTop: '7rem' }}>
+      {/* 可滚动内容区域 - 增加顶部间距避免重叠 */}
+      <main style={{ paddingTop: '8.5rem', paddingBottom: '2rem' }}>
         <NewsFeed />
       </main>
     </>
