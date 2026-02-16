@@ -7,7 +7,7 @@ import { WeiboAdapter } from './weiboAdapter';
 import { ZhihuAdapter } from './zhihuAdapter';
 import { BilibiliAdapter } from './bilibiliAdapter';
 import { YouTubeAdapter } from './youtubeAdapter';
-import { translateText } from './translationService';
+
 
 export const NewsAggregator = {
     async fetchAllNews() {
