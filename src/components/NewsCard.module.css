@@ -23,7 +23,7 @@
     z-index: 0;
 }
 
-/* 经典Glassmorphism卡片 */
+/* Liquid Glass 液态玻璃卡片 */
 .card {
     display: block;
     position: relative;
@@ -31,49 +31,57 @@
     max-width: 100%;
     min-height: 200px;
 
-    /* 核心玻璃效果 */
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background: rgba(255, 255, 255, 0.25);
+    /* 核心玻璃效果 - 增强模糊和饱和度 */
+    backdrop-filter: blur(25px) saturate(200%);
+    -webkit-backdrop-filter: blur(25px) saturate(200%);
+    background: rgba(255, 255, 255, 0.35);
 
-    /* 细腻边框 */
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 16px;
+    /* 边框 */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
 
-    /* 多层柔和阴影 - 蓝色调 */
+    /* 边缘高光 + 浮动阴影 */
     box-shadow:
-        0 8px 32px rgba(31, 38, 135, 0.15),
-        0 4px 16px rgba(31, 38, 135, 0.1);
+        /* 内部边缘高光 */
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+        /* 外部浮动阴影 - 蓝色调 */
+        0 8px 32px rgba(31, 38, 135, 0.2),
+        0 16px 64px rgba(31, 38, 135, 0.15);
 
     padding: 1.5rem;
     text-decoration: none;
     color: inherit;
     box-sizing: border-box;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 }
 
 .card:hover {
-    transform: translateY(-6px);
-    background: rgba(255, 255, 255, 0.35);
-    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-8px);
+    background: rgba(255, 255, 255, 0.45);
+    border-color: rgba(255, 255, 255, 0.6);
     box-shadow:
-        0 12px 48px rgba(31, 38, 135, 0.2),
-        0 6px 24px rgba(31, 38, 135, 0.15);
+        /* 增强内部高光 */
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.4),
+        /* 增强浮动阴影 */
+        0 12px 48px rgba(31, 38, 135, 0.25),
+        0 24px 96px rgba(31, 38, 135, 0.2);
 }
 
-/* 底部光泽条 */
+/* 底部光泽条 - 液态渐变 */
 .card::before {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 40px;
+    height: 50px;
     background: linear-gradient(to top,
-            rgba(255, 255, 255, 0.1),
+            rgba(255, 255, 255, 0.15),
             transparent);
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 20px 20px;
     pointer-events: none;
 }
 
