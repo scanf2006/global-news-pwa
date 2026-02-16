@@ -70,13 +70,25 @@ export default function NewsFeed() {
 
     // 初始化显示列表和备用池
     const initializeNewsLists = (newsData) => {
-        setAllNews(newsData);
-        setDisplayedNews(newsData.slice(0, INITIAL_DISPLAY_COUNT));
-        setReservePool(newsData.slice(INITIAL_DISPLAY_COUNT));
+        // 从localStorage读取已删除的ID
+        const storedDeletedIds = JSON.parse(localStorage.getItem('deletedNewsIds') || '[]');
+        setDeletedIds(storedDeletedIds);
+
+        // 过滤掉已删除的新闻
+        const filteredNews = newsData.filter(item => !storedDeletedIds.includes(item.id));
+
+        setAllNews(filteredNews);
+        setDisplayedNews(filteredNews.slice(0, INITIAL_DISPLAY_COUNT));
+        setReservePool(filteredNews.slice(INITIAL_DISPLAY_COUNT));
     };
 
     // 删除卡片并补充新卡片
     const handleDeleteCard = (cardId) => {
+        // 更新deletedIds并保存到localStorage
+        const newDeletedIds = [...deletedIds, cardId];
+        setDeletedIds(newDeletedIds);
+        localStorage.setItem('deletedNewsIds', JSON.stringify(newDeletedIds));
+
         setDisplayedNews(prev => {
             const filtered = prev.filter(item => item.id !== cardId);
 
@@ -171,7 +183,7 @@ export default function NewsFeed() {
             {/* Footer */}
             <footer className={styles.footer}>
                 <div className={styles.footerContent}>
-                    <span>v0.10.0</span>
+                    <span>v0.10.1</span>
                     <span>•</span>
                     <span>下拉刷新</span>
                     <span>•</span>
