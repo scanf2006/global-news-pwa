@@ -30,8 +30,6 @@ export const NewsAggregator = {
             if (zhihuNews.status === 'fulfilled') allNews = allNews.concat(zhihuNews.value);
             if (youtubeNews.status === 'fulfilled') allNews = allNews.concat(youtubeNews.value);
 
-            console.log('[NewsAggregator] Total news count after concat:', allNews.length);
-
             // Translation Step
             try {
                 const { translate } = require('google-translate-api-x');
