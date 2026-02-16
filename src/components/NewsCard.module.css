@@ -77,26 +77,3 @@
 .views {
     color: #64748b;
 }
-
-/* 缩略图 */
-.thumbnail {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 0.75rem;
-    margin-bottom: 0.75rem;
-}
-
-/* 无缩略图占位 */
-.placeholder {
-    width: 100%;
-    height: 160px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.75rem;
-    font-size: 3rem;
-    opacity: 0.3;
-}
