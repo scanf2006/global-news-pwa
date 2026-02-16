@@ -1,4 +1,4 @@
-// B站热搜适配器
+// B站热搜适配�?
 // 使用今日热榜API: https://api.vvhan.com/api/hotlist?type=bilibili
 export const BilibiliAdapter = {
     async fetchHotSearch() {
@@ -27,18 +27,18 @@ export const BilibiliAdapter = {
 
             const hotSearchList = data.data;
 
-            // 只取前5条
-            const top5 = hotSearchList.slice(0, 5);
+            // 只取�?�?
+            const top5 = hotSearchList.slice(0, 10);
 
             return top5.map((item, index) => ({
                 id: `bilibili-${Date.now()}-${index}`,
                 source: 'Bilibili',
                 titleOriginal: item.title || '',
-                titleTranslated: item.title || '', // B站内容已是中文
+                titleTranslated: item.title || '', // B站内容已是中�?
                 url: item.url || item.mobilUrl || `https://www.bilibili.com`,
                 timestamp: new Date().toISOString(),
                 views: item.hot || null,
-                thumbnail: null // 不显示图标
+                thumbnail: null // 不显示图�?
             }));
         } catch (error) {
             console.error('[Bilibili] Error:', error);
@@ -58,11 +58,11 @@ export const BilibiliAdapter = {
             {
                 id: `bilibili-${baseTime}-0`,
                 source: 'Bilibili',
-                titleOriginal: '最新番剧更新推荐',
-                titleTranslated: '最新番剧更新推荐',
+                titleOriginal: '最新番剧更新推�?,
+                titleTranslated: '最新番剧更新推�?,
                 url: 'https://www.bilibili.com/anime',
                 timestamp: now,
-                views: '1245万',
+                views: '1245�?,
                 thumbnail: null
             },
             {
@@ -72,37 +72,37 @@ export const BilibiliAdapter = {
                 titleTranslated: '科技区UP主新作品',
                 url: 'https://www.bilibili.com/v/tech',
                 timestamp: now,
-                views: '856万',
+                views: '856�?,
                 thumbnail: null
             },
             {
                 id: `bilibili-${baseTime}-2`,
                 source: 'Bilibili',
-                titleOriginal: '游戏区热门视频',
-                titleTranslated: '游戏区热门视频',
+                titleOriginal: '游戏区热门视�?,
+                titleTranslated: '游戏区热门视�?,
                 url: 'https://www.bilibili.com/v/game',
                 timestamp: now,
-                views: '723万',
+                views: '723�?,
                 thumbnail: null
             },
             {
                 id: `bilibili-${baseTime}-3`,
                 source: 'Bilibili',
-                titleOriginal: '知识区精选内容',
-                titleTranslated: '知识区精选内容',
+                titleOriginal: '知识区精选内�?,
+                titleTranslated: '知识区精选内�?,
                 url: 'https://www.bilibili.com/v/knowledge',
                 timestamp: now,
-                views: '645万',
+                views: '645�?,
                 thumbnail: null
             },
             {
                 id: `bilibili-${baseTime}-4`,
                 source: 'Bilibili',
-                titleOriginal: '生活区热门分享',
-                titleTranslated: '生活区热门分享',
+                titleOriginal: '生活区热门分�?,
+                titleTranslated: '生活区热门分�?,
                 url: 'https://www.bilibili.com/v/life',
                 timestamp: now,
-                views: '534万',
+                views: '534�?,
                 thumbnail: null
             }
         ];

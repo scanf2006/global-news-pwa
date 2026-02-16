@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio';
 export const WeiboAdapter = {
     async fetchHotSearch() {
         try {
-            // 尝试从微博官方接口获取热搜数据
+            // 尝试从微博官方接口获取热搜数�?
             const url = 'https://weibo.com/ajax/side/hotSearch';
 
             const response = await fetch(url, {
@@ -22,8 +22,8 @@ export const WeiboAdapter = {
             // 微博API返回格式: { data: { realtime: [ { word, num, ... } ] } }
             const hotSearchList = data?.data?.realtime || [];
 
-            // 只取前5条
-            const top5 = hotSearchList.slice(0, 5);
+            // 只取�?�?
+            const top5 = hotSearchList.slice(0, 10);
 
             return top5.map((item, index) => ({
                 id: `weibo-${Date.now()}-${index}`,
@@ -37,7 +37,7 @@ export const WeiboAdapter = {
             }));
         } catch (error) {
             console.error('WeiboAdapter Error:', error);
-            // 如果官方接口失败,返回空数组而不是抛出错误
+            // 如果官方接口失败,返回空数组而不是抛出错�?
             return [];
         }
     }

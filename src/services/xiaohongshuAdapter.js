@@ -2,7 +2,7 @@ export const XiaohongshuAdapter = {
     async fetchHotTopics() {
         try {
             // 使用顺为数据的小红书热榜API
-            // API密钥从环境变量读取
+            // API密钥从环境变量读�?
             const apiKey = process.env.XIAOHONGSHU_API_KEY || '';
 
             if (!apiKey) {
@@ -34,8 +34,8 @@ export const XiaohongshuAdapter = {
 
             const hotTopics = data.data;
 
-            // 只取前5条
-            const top5 = hotTopics.slice(0, 5);
+            // 只取�?�?
+            const top5 = hotTopics.slice(0, 10);
 
             return top5.map((item, index) => ({
                 id: `xiaohongshu-${Date.now()}-${index}`,
@@ -45,16 +45,16 @@ export const XiaohongshuAdapter = {
                 url: item.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(item.name || '')}`,
                 timestamp: new Date().toISOString(),
                 views: item.viewnum || null,
-                thumbnail: null  // 不显示图标
+                thumbnail: null  // 不显示图�?
             }));
         } catch (error) {
             console.error('[Xiaohongshu] Error:', error);
-            // 如果接口失败,使用精选话题
+            // 如果接口失败,使用精选话�?
             return this.getCuratedHotTopics();
         }
     },
 
-    // 精选热门话题(备用数据)
+    // 精选热门话�?备用数据)
     getCuratedHotTopics() {
         const now = new Date().toISOString();
         const baseTime = Date.now();
@@ -67,17 +67,17 @@ export const XiaohongshuAdapter = {
                 titleTranslated: '春节出游攻略',
                 url: 'https://www.xiaohongshu.com/search_result?keyword=春节出游攻略',
                 timestamp: now,
-                views: '128.5万',
+                views: '128.5�?,
                 thumbnail: null
             },
             {
                 id: `xiaohongshu-${baseTime}-1`,
                 source: 'Xiaohongshu',
-                titleOriginal: '护肤品测评',
-                titleTranslated: '护肤品测评',
-                url: 'https://www.xiaohongshu.com/search_result?keyword=护肤品测评',
+                titleOriginal: '护肤品测�?,
+                titleTranslated: '护肤品测�?,
+                url: 'https://www.xiaohongshu.com/search_result?keyword=护肤品测�?,
                 timestamp: now,
-                views: '95.2万',
+                views: '95.2�?,
                 thumbnail: null
             },
             {
@@ -87,7 +87,7 @@ export const XiaohongshuAdapter = {
                 titleTranslated: '健身打卡',
                 url: 'https://www.xiaohongshu.com/search_result?keyword=健身打卡',
                 timestamp: now,
-                views: '76.8万',
+                views: '76.8�?,
                 thumbnail: null
             },
             {
@@ -97,7 +97,7 @@ export const XiaohongshuAdapter = {
                 titleTranslated: '美食探店',
                 url: 'https://www.xiaohongshu.com/search_result?keyword=美食探店',
                 timestamp: now,
-                views: '64.3万',
+                views: '64.3�?,
                 thumbnail: null
             },
             {
@@ -107,7 +107,7 @@ export const XiaohongshuAdapter = {
                 titleTranslated: '穿搭灵感',
                 url: 'https://www.xiaohongshu.com/search_result?keyword=穿搭灵感',
                 timestamp: now,
-                views: '52.7万',
+                views: '52.7�?,
                 thumbnail: null
             }
         ];
