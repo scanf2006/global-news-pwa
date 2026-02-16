@@ -55,6 +55,19 @@
     border-color: rgba(255, 255, 255, .2);
 }
 
+/* 底部光泽条 - 类似标题页效果 */
+.card::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 0 0 1.25rem 1.25rem;
+    pointer-events: none;
+}
+
 /* 内容区域 */
 .content {
     position: relative;
