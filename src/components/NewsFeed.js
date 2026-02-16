@@ -9,6 +9,7 @@ export default function NewsFeed() {
     const [allNews, setAllNews] = useState([]); // 所有新闻
     const [displayedNews, setDisplayedNews] = useState([]); // 显示的新闻
     const [reservePool, setReservePool] = useState([]); // 备用池
+    const [deletedIds, setDeletedIds] = useState([]); // 已删除的卡片ID
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
