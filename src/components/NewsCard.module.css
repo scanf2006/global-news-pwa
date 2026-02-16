@@ -34,7 +34,10 @@
     border-radius: 1.25rem;
     background: linear-gradient(rgba(255, 255, 255, 0.15), transparent);
     border: 1px solid rgba(255, 255, 255, .1);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.05),
+        0 2px 6px rgba(0, 0, 0, 0.05),
+        0 4px 12px rgba(0, 0, 0, 0.05);
     padding: 1.5rem;
     text-decoration: none;
     color: inherit;
@@ -45,7 +48,10 @@
 
 .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 12px rgba(0, 0, 0, .15);
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.06),
+        0 8px 16px rgba(0, 0, 0, 0.08);
     border-color: rgba(255, 255, 255, .2);
 }
 
