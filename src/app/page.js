@@ -3,7 +3,7 @@ import NewsFeed from '@/components/NewsFeed';
 export default function Home() {
   return (
     <>
-      {/* 固定标题容器 - 完全对齐grid */}
+      {/* 固定标题容器 */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -13,21 +13,19 @@ export default function Home() {
         paddingTop: '1.5rem',
         pointerEvents: 'none'
       }}>
-        {/* 与grid完全相同的布局 - 红色竖线 */}
+        {/* 与grid完全相同的布局 */}
         <div style={{
           maxWidth: '1400px',
           margin: '0 auto',
           padding: '0 1.5rem',
           pointerEvents: 'none',
           width: '100%',
-          boxSizing: 'border-box',
-          // 只显示左右边框
-          borderLeft: '3px solid red',
-          borderRight: '3px solid red'
+          boxSizing: 'border-box'
         }}>
-          {/* 圆角透明玻璃方块 */}
+          {/* 圆角透明玻璃方块 - 占满容器宽度 */}
           <div style={{
             position: 'relative',
+            width: '100%',
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
