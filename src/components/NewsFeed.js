@@ -99,38 +99,27 @@ export default function NewsFeed() {
                                 {cacheStatus.fromCache ? '📦' : '🆕'}
                             </span>
                         )}
-                        <span className={styles.refreshIcon}>↻</span>
-                        {loading ? '刷新中...' : '刷新'}
-                    </button>
-                </div>
-        </div>
-            </nav >
-
-        {/* News Grid */ }
-    {
-        loading && news.length === 0 ? (
-            <div className={styles.grid}>
-                {[...Array(6)].map((_, i) => (
-                    <div key={i} className={styles.skeletonCard}></div>
-                ))}
-            </div>
-        ) : (
-        <div className={styles.grid}>
-            {news.map(item => (
-                <NewsCard key={item.id} item={item} />
-            ))}
-        </div>
-    )
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className={styles.skeletonCard}></div>
+                        ))}
+                    </div>
+                    ) : (
+                    <div className={styles.grid}>
+                        {news.map(item => (
+                            <NewsCard key={item.id} item={item} />
+                        ))}
+                    </div>
+                    )
     }
 
-    {/* Footer */ }
-    <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-            <span>v0.7.2</span>
-            <span className={styles.separator}>•</span>
-            <span>全球热点新闻聚合</span>
-        </div>
-    </footer>
-        </div >
-    );
+                    {/* Footer */}
+                    <footer className={styles.footer}>
+                        <div className={styles.footerContent}>
+                            <span>v0.7.2</span>
+                            <span className={styles.separator}>•</span>
+                            <span>全球热点新闻聚合</span>
+                        </div>
+                    </footer>
+                </div >
+                );
 }
