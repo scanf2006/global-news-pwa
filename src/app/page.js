@@ -22,7 +22,7 @@ export default function Home() {
           width: '100%',
           boxSizing: 'border-box'
         }}>
-          {/* 圆角透明玻璃方块 - 调试 */}
+          {/* 圆角透明玻璃方块 */}
           <div style={{
             position: 'relative',
             width: '100%',
@@ -36,9 +36,7 @@ export default function Home() {
             boxShadow: '0 8px 32px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.2)',
             pointerEvents: 'auto',
             overflow: 'hidden',
-            boxSizing: 'border-box',
-            // 调试: 绿色边框在玻璃块上
-            outline: '3px solid lime'
+            boxSizing: 'border-box'
           }}>
             {/* 顶部光泽线 */}
             <div style={{
