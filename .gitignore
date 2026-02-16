@@ -37,6 +37,11 @@ yarn-error.log*
 # test files
 test_*.js
 
+# Sentry
+.sentryclirc
+.sentry-*
+sentry.properties
+
 # vercel
 .vercel
 

@@ -56,4 +56,19 @@ const withPWA = require("@ducanh2912/next-pwa").default({
     skipWaiting: true,
 });
 
-module.exports = withPWA(nextConfig);
+// Sentry配置
+const { withSentryConfig } = require("@sentry/nextjs");
+
+const sentryWebpackPluginOptions = {
+    // 静默上传Source Maps
+    silent: true,
+    // 组织和项目
+    org: "scanf2006",
+    project: "global-news-pwa",
+};
+
+// 导出配置(先PWA,再Sentry)
+module.exports = withSentryConfig(
+    withPWA(nextConfig),
+    sentryWebpackPluginOptions
+);

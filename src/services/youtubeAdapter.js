@@ -1,5 +1,7 @@
 // YouTube热门视频适配器
 // 获取热门视频前5个
+import * as Sentry from "@sentry/nextjs";
+
 export const YouTubeAdapter = {
     async fetchTrending() {
         try {
@@ -21,6 +23,20 @@ export const YouTubeAdapter = {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error(`[YouTube] API error (${response.status}):`, errorText);
+
+                // 发送到Sentry
+                Sentry.captureException(new Error(`YouTube API error: ${response.status}`), {
+                    tags: {
+                        adapter: 'YouTube',
+                        action: 'fetchTrending',
+                        status: response.status
+                    },
+                    extra: {
+                        errorText: errorText.substring(0, 500),
+                        apiKeyPresent: !!apiKey
+                    }
+                });
+
                 return this.getFallbackVideos();
             }
 
@@ -43,6 +59,18 @@ export const YouTubeAdapter = {
             }));
         } catch (error) {
             console.error('[YouTube] Exception:', error.message);
+
+            // 发送到Sentry
+            Sentry.captureException(error, {
+                tags: {
+                    adapter: 'YouTube',
+                    action: 'fetchTrending'
+                },
+                extra: {
+                    errorMessage: error.message
+                }
+            });
+
             return this.getFallbackVideos();
         }
     },

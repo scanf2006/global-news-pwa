@@ -1,9 +1,13 @@
+// 新闻聚合器 - 整合所有新闻源
+import * as Sentry from "@sentry/nextjs";
 import { RSSAdapter } from './rssAdapter';
 import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
 import { ZhihuAdapter } from './zhihuAdapter';
+import { BilibiliAdapter } from './bilibiliAdapter';
 import { YouTubeAdapter } from './youtubeAdapter';
+import { translateText } from './translationService';
 
 export const NewsAggregator = {
     async fetchAllNews() {
