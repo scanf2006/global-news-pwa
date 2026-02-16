@@ -34,7 +34,7 @@
     border-radius: 1.25rem;
     background: linear-gradient(rgba(255, 255, 255, 0.15), transparent);
     border: 1px solid rgba(255, 255, 255, .1);
-    box-shadow: 0 15px 15px rgba(0, 0, 0, .25);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
     padding: 1.5rem;
     text-decoration: none;
     color: inherit;
@@ -45,7 +45,7 @@
 
 .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 25px rgba(0, 0, 0, .3);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, .15);
     border-color: rgba(255, 255, 255, .2);
 }
 
