@@ -4,7 +4,6 @@ import { RSSAdapter } from './rssAdapter';
 import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
-import { ZhihuAdapter } from './zhihuAdapter';
 import { BilibiliAdapter } from './bilibiliAdapter';
 import { YouTubeAdapter } from './youtubeAdapter';
 
@@ -12,12 +11,11 @@ import { YouTubeAdapter } from './youtubeAdapter';
 export const NewsAggregator = {
     async fetchAllNews() {
         try {
-            const [rssNews, redditNews, twitterNews, weiboNews, zhihuNews, youtubeNews] = await Promise.allSettled([
+            const [rssNews, redditNews, twitterNews, weiboNews, youtubeNews] = await Promise.allSettled([
                 RSSAdapter.fetchAll(),
                 RedditAdapter.fetchTrending(),
                 TwitterAdapter.fetchTrending(),
                 WeiboAdapter.fetchHotSearch(),
-                ZhihuAdapter.fetchHotTopics(),
                 YouTubeAdapter.fetchTrending()
             ]);
 
@@ -27,7 +25,6 @@ export const NewsAggregator = {
             if (redditNews.status === 'fulfilled') allNews = allNews.concat(redditNews.value);
             if (twitterNews.status === 'fulfilled') allNews = allNews.concat(twitterNews.value);
             if (weiboNews.status === 'fulfilled') allNews = allNews.concat(weiboNews.value);
-            if (zhihuNews.status === 'fulfilled') allNews = allNews.concat(zhihuNews.value);
             if (youtubeNews.status === 'fulfilled') allNews = allNews.concat(youtubeNews.value);
 
             // Translation Step
@@ -37,8 +34,8 @@ export const NewsAggregator = {
                 // 翻译所有新闻,不限制数量
                 await Promise.allSettled(allNews.map(async (item) => {
                     if (!item.titleOriginal) return;
-                    // 微博和知乎内容已是中文,跳过翻译
-                    if (item.source === 'Weibo' || item.source === 'Zhihu') {
+                    // 微博内容已是中文,跳过翻译
+                    if (item.source === '微博热搜') {
                         item.titleTranslated = item.titleOriginal;
                         return;
                     }
