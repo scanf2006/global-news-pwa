@@ -55,7 +55,7 @@
     border-color: rgba(255, 255, 255, .2);
 }
 
-/* 底部光泽条 - 类似标题页效果 */
+/* 底部光泽条 - 类似标题页效果,带阴影 */
 .card::before {
     content: '';
     position: absolute;
@@ -66,6 +66,9 @@
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: 0 0 1.25rem 1.25rem;
     pointer-events: none;
+    box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 /* 内容区域 */
