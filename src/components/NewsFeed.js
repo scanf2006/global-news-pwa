@@ -6,11 +6,15 @@ import styles from './NewsFeed.module.css';
 import { APICache } from '@/lib/cache';
 
 export default function NewsFeed() {
-    const [news, setNews] = useState([]);
+    const [allNews, setAllNews] = useState([]); // 所有新闻
+    const [displayedNews, setDisplayedNews] = useState([]); // 显示的新闻
+    const [reservePool, setReservePool] = useState([]); // 备用池
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [cacheStatus, setCacheStatus] = useState(null);
+
+    const INITIAL_DISPLAY_COUNT = 20; // 初始显示20条
 
     const fetchNews = async (forceRefresh = false) => {
         setLoading(true);
@@ -20,7 +24,7 @@ export default function NewsFeed() {
             if (!forceRefresh) {
                 const cached = APICache.get('news');
                 if (cached) {
-                    setNews(cached);
+                    initializeNewsLists(cached);
                     setLoading(false);
 
                     // 获取缓存信息
@@ -28,7 +32,7 @@ export default function NewsFeed() {
                     if (cacheInfo) {
                         setCacheStatus({
                             fromCache: true,
-                            age: Math.floor(cacheInfo.age / 1000), // 转换为秒
+                            age: Math.floor(cacheInfo.age / 1000),
                             remaining: Math.floor(cacheInfo.remaining / 1000)
                         });
                     }
@@ -42,7 +46,7 @@ export default function NewsFeed() {
             const data = await res.json();
 
             if (data.success) {
-                setNews(data.data);
+                initializeNewsLists(data.data);
                 setLastUpdated(new Date());
 
                 // 缓存数据
@@ -52,7 +56,7 @@ export default function NewsFeed() {
                 setCacheStatus({
                     fromCache: false,
                     age: 0,
-                    remaining: 600 // 10分钟
+                    remaining: 600
                 });
             }
         } catch (error) {
@@ -63,9 +67,32 @@ export default function NewsFeed() {
         }
     };
 
+    // 初始化显示列表和备用池
+    const initializeNewsLists = (newsData) => {
+        setAllNews(newsData);
+        setDisplayedNews(newsData.slice(0, INITIAL_DISPLAY_COUNT));
+        setReservePool(newsData.slice(INITIAL_DISPLAY_COUNT));
+    };
+
+    // 删除卡片并补充新卡片
+    const handleDeleteCard = (cardId) => {
+        setDisplayedNews(prev => {
+            const filtered = prev.filter(item => item.id !== cardId);
+
+            // 从备用池取一条补充
+            if (reservePool.length > 0) {
+                const newCard = reservePool[0];
+                setReservePool(pool => pool.slice(1));
+                return [...filtered, newCard];
+            }
+
+            return filtered;
+        });
+    };
+
     const handleRefresh = () => {
         setIsRefreshing(true);
-        fetchNews(true); // 强制刷新
+        fetchNews(true);
     };
 
     useEffect(() => {
@@ -123,15 +150,19 @@ export default function NewsFeed() {
 
             {/* News Grid */}
             <div className={styles.grid}>
-                {loading && news.length === 0 ? (
+                {loading && displayedNews.length === 0 ? (
                     <>
                         {[...Array(6)].map((_, i) => (
                             <div key={i} className={styles.skeletonCard}></div>
                         ))}
                     </>
                 ) : (
-                    news.map((item) => (
-                        <NewsCard key={item.id} item={item} />
+                    displayedNews.map((item) => (
+                        <NewsCard
+                            key={item.id}
+                            item={item}
+                            onDelete={handleDeleteCard}
+                        />
                     ))
                 )}
             </div>
@@ -139,9 +170,11 @@ export default function NewsFeed() {
             {/* Footer */}
             <footer className={styles.footer}>
                 <div className={styles.footerContent}>
-                    <span>v0.9.1</span>
+                    <span>v0.10.0</span>
                     <span>•</span>
                     <span>下拉刷新</span>
+                    <span>•</span>
+                    <span>左滑删除</span>
                     <span>•</span>
                     <span>{cacheStatus?.fromCache ? '📦 缓存' : '🆕 最新'}</span>
                 </div>

@@ -1,3 +1,28 @@
+/* 卡片包装器 - 用于滑动删除 */
+.cardWrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* 删除指示器 */
+.deleteIndicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100px;
+    background: linear-gradient(90deg, transparent, #ef4444);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 1rem;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    z-index: 0;
+}
+
 .card {
     display: block;
     position: relative;
