@@ -1,26 +1,51 @@
-﻿// 微博热搜适配器 - 使用最直接的 GitHub Raw 源
+﻿// 微博热搜适配器 - 全面修复版 (Multi-Source + Detailed Logging)
 export const WeiboAdapter = {
     async fetchHotSearch() {
         console.log('--- WeiboAdapter.fetchHotSearch START ---');
 
         try {
-            // 尝试多个API源,优先使用最直接的Raw地址
+            // 定义所有可能的数据源,按优先级排序
             const sources = [
                 {
-                    // 方案1: GitHub Raw (最原始、最直接的数据)
-                    // 使用 Raw URL 可以避免某些 CDN 缓存或 DNS 问题
-                    name: 'github-raw',
+                    // 1. GitHub Raw (Master分支) - 最直接
+                    name: 'github-raw-master',
                     url: 'https://raw.githubusercontent.com/justjavac/weibo-trending-hot-search/master/hot-search.json',
-                    parser: (data) => parseGithubData(data, 'github-raw')
+                    parser: (data) => parseGithubData(data, 'github-raw-master')
                 },
                 {
-                    // 方案2: jsDelivr CDN (作为快速备份)
+                    // 2. jsDelivr CDN - 快速且稳定
                     name: 'jsdelivr',
-                    url: 'https://fastly.jsdelivr.net/gh/justjavac/weibo-trending-hot-search@master/hot-search.json',
+                    url: 'https://cdn.jsdelivr.net/gh/justjavac/weibo-trending-hot-search@master/hot-search.json',
                     parser: (data) => parseGithubData(data, 'jsdelivr')
                 },
                 {
-                    // 方案3: 备用 API (vvhan)
+                    // 3. Fastly jsDelivr (备用CDN域名)
+                    name: 'jsdelivr-fastly',
+                    url: 'https://fastly.jsdelivr.net/gh/justjavac/weibo-trending-hot-search@master/hot-search.json',
+                    parser: (data) => parseGithubData(data, 'jsdelivr-fastly')
+                },
+                {
+                    // 4. Tenapi (专为国内优化的API)
+                    name: 'tenapi',
+                    url: 'https://tenapi.cn/v2/weibohot',
+                    parser: (data) => {
+                        if (data.code === 200 && data.data) {
+                            return data.data.slice(0, 10).map((item, index) => ({
+                                id: `weibo-tenapi-${index}-${Date.now()}`,
+                                title: item.name,
+                                url: item.url,
+                                source: '微博热搜',
+                                rank: index + 1,
+                                views: parseViews(item.hot),
+                                titleOriginal: item.name,
+                                timestamp: new Date().toISOString()
+                            }));
+                        }
+                        return null;
+                    }
+                },
+                {
+                    // 5. VVhan API
                     name: 'vvhan',
                     url: 'https://api.vvhan.com/api/hotlist/weiboHot',
                     parser: (data) => {
@@ -31,7 +56,7 @@ export const WeiboAdapter = {
                                 url: item.url,
                                 source: '微博热搜',
                                 rank: index + 1,
-                                views: item.hot || 0,
+                                views: parseViews(item.hot),
                                 titleOriginal: item.title,
                                 timestamp: new Date().toISOString()
                             }));
@@ -40,7 +65,7 @@ export const WeiboAdapter = {
                     }
                 },
                 {
-                    // 方案4: 备用 API (oioweb)
+                    // 6. OIOWeb API
                     name: 'oioweb',
                     url: 'https://api.oioweb.cn/api/common/HotList?type=weibo',
                     parser: (data) => {
@@ -51,7 +76,7 @@ export const WeiboAdapter = {
                                 url: item.url,
                                 source: '微博热搜',
                                 rank: index + 1,
-                                views: item.hot || 0,
+                                views: parseViews(item.hot),
                                 titleOriginal: item.title,
                                 timestamp: new Date().toISOString()
                             }));
@@ -64,13 +89,18 @@ export const WeiboAdapter = {
             // 尝试每个数据源
             for (const source of sources) {
                 try {
-                    console.log(`Trying Weibo source: ${source.name}`);
+                    console.log(`Trying Weibo source: ${source.name} (${source.url})`);
+
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 6000); // 稍微延长时间给Raw请求
+                    // 这里的超时时间要足够短以快速失败,但也要足够长以允许连接
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
                     const response = await fetch(source.url, {
                         headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            // 模拟浏览器UA,防止被GitHub/CDN拦截
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'application/json, text/plain, */*',
+                            'Cache-Control': 'no-cache'
                         },
                         signal: controller.signal
                     });
@@ -78,19 +108,28 @@ export const WeiboAdapter = {
 
                     if (response.ok) {
                         const contentType = response.headers.get('content-type');
-                        // GitHub Raw 通常返回 text/plain, 但内容是 JSON
+                        // 简单的内容类型检查
+                        if (contentType && contentType.includes('text/html')) {
+                            console.warn(`Weibo ${source.name} returned HTML (likely 404 page or captcha)`);
+                            continue;
+                        }
 
                         const data = await response.json();
                         const parsed = source.parser(data);
+
                         if (parsed && parsed.length > 0) {
                             console.log(`Weibo ${source.name} success:`, parsed.length, 'items');
                             return parsed;
+                        } else {
+                            console.warn(`Weibo ${source.name} parsed empty data`);
                         }
                     } else {
                         console.warn(`Weibo ${source.name} returned status: ${response.status}`);
                     }
                 } catch (error) {
-                    console.warn(`Weibo ${source.name} failed:`, error.message);
+                    // 记录具体错误,如果是Timeout则明确说明
+                    const isTimeout = error.name === 'AbortError' || error.name === 'TimeoutError';
+                    console.warn(`Weibo ${source.name} failed: ${isTimeout ? 'TIMEOUT' : error.message}`);
                     continue;
                 }
             }
@@ -100,31 +139,8 @@ export const WeiboAdapter = {
 
         console.log('All Weibo sources failed, generating fallback data now');
 
-        // 后备数据(模拟数据)
-        const fallbackData = [
-            '春节档电影票房创新高',
-            '多地气温回升迎来春天',
-            '科技公司发布新产品',
-            '体育赛事精彩瞬间',
-            '明星动态引发热议',
-            '社会热点事件关注',
-            '经济数据发布',
-            '文化活动精彩纷呈',
-            '教育改革新政策',
-            '健康生活小贴士'
-        ].map((topic, index) => ({
-            id: `weibo-fallback-${index}-${Date.now()}`,
-            title: topic,
-            url: `https://s.weibo.com/weibo?q=${encodeURIComponent(topic)}`,
-            source: '微博热搜',
-            rank: index + 1,
-            views: 0,
-            titleOriginal: topic,
-            timestamp: new Date().toISOString()
-        }));
-
-        console.log('Fallback data generated:', fallbackData.length);
-        return fallbackData;
+        // 最后的防线: 模拟数据
+        return getFallbackData();
     }
 };
 
@@ -143,4 +159,36 @@ function parseGithubData(data, sourceName) {
         }));
     }
     return null;
+}
+
+// 辅助函数: 处理热度数值
+function parseViews(hot) {
+    if (!hot) return 0;
+    if (typeof hot === 'number') return hot;
+    return parseInt(hot) || 0;
+}
+
+// 辅助函数: 获取模拟数据
+function getFallbackData() {
+    return [
+        '春节档电影票房创新高',
+        '多地气温回升迎来春天',
+        '科技公司发布新产品',
+        '体育赛事精彩瞬间',
+        '明星动态引发热议',
+        '社会热点事件关注',
+        '经济数据发布',
+        '文化活动精彩纷呈',
+        '教育改革新政策',
+        '健康生活小贴士'
+    ].map((topic, index) => ({
+        id: `weibo-fallback-${index}-${Date.now()}`,
+        title: topic,
+        url: `https://s.weibo.com/weibo?q=${encodeURIComponent(topic)}`,
+        source: '微博热搜',
+        rank: index + 1,
+        views: 0,
+        titleOriginal: topic,
+        timestamp: new Date().toISOString()
+    }));
 }
