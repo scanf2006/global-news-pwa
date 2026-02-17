@@ -1,4 +1,4 @@
-﻿// 微博热搜适配器 - 最终修复版(带时间戳)
+﻿// 微博热搜适配器 - 集成多个可靠源(包括GitHub Pages)
 export const WeiboAdapter = {
     async fetchHotSearch() {
         console.log('--- WeiboAdapter.fetchHotSearch START ---');
@@ -6,6 +6,28 @@ export const WeiboAdapter = {
         try {
             // 尝试多个API源
             const sources = [
+                {
+                    // 方案1: GitHub Pages (justjavac项目) - 极其稳定,每小时更新
+                    // 项目地址: https://github.com/justjavac/weibo-trending-hot-search
+                    name: 'github-pages',
+                    url: 'https://weibo-trending-hot-search.pages.dev/hot-search.json',
+                    parser: (data) => {
+                        // 数据格式: array of { title, url, hot, ... }
+                        if (Array.isArray(data)) {
+                            return data.slice(0, 10).map((item, index) => ({
+                                id: `weibo-gh-${index}-${Date.now()}`,
+                                title: item.title || item.word,
+                                url: item.url || `https://s.weibo.com/weibo?q=${encodeURIComponent(item.title || item.word)}`,
+                                source: '微博热搜', // 保持源名称一致
+                                rank: index + 1,
+                                views: item.hot || item.num || 0,
+                                titleOriginal: item.title || item.word,
+                                timestamp: new Date().toISOString() // 必须包含时间戳
+                            }));
+                        }
+                        return null;
+                    }
+                },
                 {
                     name: 'vvhan',
                     url: 'https://api.vvhan.com/api/hotlist/weiboHot',
@@ -19,7 +41,7 @@ export const WeiboAdapter = {
                                 rank: index + 1,
                                 views: item.hot || 0,
                                 titleOriginal: item.title,
-                                timestamp: new Date().toISOString() // 关键修复: 添加时间戳
+                                timestamp: new Date().toISOString()
                             }));
                         }
                         return null;
@@ -38,7 +60,7 @@ export const WeiboAdapter = {
                                 rank: index + 1,
                                 views: item.hot || 0,
                                 titleOriginal: item.title,
-                                timestamp: new Date().toISOString() // 关键修复: 添加时间戳
+                                timestamp: new Date().toISOString()
                             }));
                         }
                         return null;
@@ -81,7 +103,7 @@ export const WeiboAdapter = {
 
         console.log('All Weibo sources failed, generating fallback data now');
 
-        // 直接构造数据,不调用外部函数
+        // 后备数据(模拟数据)
         const fallbackData = [
             '春节档电影票房创新高',
             '多地气温回升迎来春天',
@@ -101,7 +123,7 @@ export const WeiboAdapter = {
             rank: index + 1,
             views: 0,
             titleOriginal: topic,
-            timestamp: new Date().toISOString() // 关键修复: 添加时间戳
+            timestamp: new Date().toISOString()
         }));
 
         console.log('Fallback data generated:', fallbackData.length);
