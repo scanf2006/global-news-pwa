@@ -15,7 +15,7 @@ export default function NewsFeed() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [cacheStatus, setCacheStatus] = useState(null);
 
-    const INITIAL_DISPLAY_COUNT = 12; // 初始显示12条,备选池更多
+    const INITIAL_DISPLAY_COUNT = 7; // 显示 Rank 4-10 (共7条)
 
     const fetchNews = async (forceRefresh = false) => {
         setLoading(true);
@@ -75,11 +75,26 @@ export default function NewsFeed() {
         setDeletedIds(storedDeletedIds);
 
         // 过滤掉已删除的新闻
-        const filteredNews = newsData.filter(item => !storedDeletedIds.includes(item.id));
+        // 注意：这里先不切片，保留所有获取到的数据（预期30条）
+        let availableNews = newsData.filter(item => !storedDeletedIds.includes(item.id));
 
-        setAllNews(filteredNews);
-        setDisplayedNews(filteredNews.slice(0, INITIAL_DISPLAY_COUNT));
-        setReservePool(filteredNews.slice(INITIAL_DISPLAY_COUNT));
+        // 逻辑调整:
+        // 1. 丢弃前3条 (Rank 1-3)
+        // 2. 显示接下来的7条 (Rank 4-10)
+        // 3. 剩余的全部放入备用池 (Rank 11-30)
+
+        // 如果数据量不够切掉前3条，就直接显示剩余的
+        if (availableNews.length > 3) {
+            availableNews = availableNews.slice(3);
+        }
+
+        setAllNews(availableNews); // allNews 现在是从 Rank 4 开始的所有数据
+
+        // 设置初始显示列表 (Rank 4-10)
+        setDisplayedNews(availableNews.slice(0, INITIAL_DISPLAY_COUNT));
+
+        // 设置备用池 (Rank 11-30)
+        setReservePool(availableNews.slice(INITIAL_DISPLAY_COUNT));
     };
 
     // 删除卡片并补充新卡片
@@ -93,23 +108,15 @@ export default function NewsFeed() {
             const filtered = prev.filter(item => item.id !== cardId);
 
             // 从备用池取一条补充
+            // 备用池已经是按顺序排列的 (Rank 11, 12, ... 30)
+            // 所以直接取第一个就能满足 "先11-20，再21-30" 的需求
             if (reservePool.length > 0) {
                 const newCard = reservePool[0];
                 setReservePool(pool => pool.slice(1));
                 return [...filtered, newCard];
             }
 
-            // 备用池用完后,从allNews中取排名靠后的新闻
-            const displayedIds = new Set(filtered.map(item => item.id));
-            const nextNews = allNews.find(item =>
-                !displayedIds.has(item.id) &&
-                !newDeletedIds.includes(item.id)
-            );
-
-            if (nextNews) {
-                return [...filtered, nextNews];
-            }
-
+            // 备用池用完后，不再补充(或者从更后面的数据补充，暂无)
             return filtered;
         });
     };

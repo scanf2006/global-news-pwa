@@ -14,7 +14,7 @@ export const WeiboAdapter = {
                     url: 'https://weibo.com/ajax/side/hotSearch',
                     parser: (data) => {
                         if (data && data.data && data.data.realtime) {
-                            return data.data.realtime.slice(0, 10).map((item, index) => ({
+                            return data.data.realtime.slice(0, 30).map((item, index) => ({
                                 id: `weibo-direct-${index}-${Date.now()}`,
                                 title: item.note || item.word,
                                 url: `https://s.weibo.com/weibo?q=${encodeURIComponent(item.word_scheme || item.word)}`,
@@ -53,7 +53,7 @@ export const WeiboAdapter = {
                     url: 'https://tenapi.cn/v2/weibohot',
                     parser: (data) => {
                         if (data.code === 200 && data.data) {
-                            return data.data.slice(0, 10).map((item, index) => ({
+                            return data.data.slice(0, 30).map((item, index) => ({
                                 id: `weibo-tenapi-${index}-${Date.now()}`,
                                 title: item.name,
                                 url: item.url,
@@ -73,7 +73,7 @@ export const WeiboAdapter = {
                     url: 'https://api.vvhan.com/api/hotlist/weiboHot',
                     parser: (data) => {
                         if (data.success && data.data) {
-                            return data.data.slice(0, 10).map((item, index) => ({
+                            return data.data.slice(0, 30).map((item, index) => ({
                                 id: `weibo-vvhan-${index}-${Date.now()}`,
                                 title: item.title,
                                 url: item.url,
@@ -93,7 +93,7 @@ export const WeiboAdapter = {
                     url: 'https://api.oioweb.cn/api/common/HotList?type=weibo',
                     parser: (data) => {
                         if (data.code === 200 && data.result && data.result.list) {
-                            return data.result.list.slice(0, 10).map((item, index) => ({
+                            return data.result.list.slice(0, 30).map((item, index) => ({
                                 id: `weibo-oioweb-${index}-${Date.now()}`,
                                 title: item.title,
                                 url: item.url,
@@ -193,7 +193,7 @@ export const WeiboAdapter = {
 // 辅助函数: 解析GitHub数据格式
 function parseGithubData(data, sourceName) {
     if (Array.isArray(data)) {
-        return data.slice(0, 10).map((item, index) => ({
+        return data.slice(0, 30).map((item, index) => ({
             id: `weibo-${sourceName}-${index}-${Date.now()}`,
             title: item.title || item.word,
             url: item.url || `https://s.weibo.com/weibo?q=${encodeURIComponent(item.title || item.word)}`,
