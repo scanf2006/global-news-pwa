@@ -21,22 +21,11 @@ export const NewsAggregator = {
 
             let allNews = [];
 
-            console.log('News sources status:', {
-                rss: rssNews.status,
-                reddit: redditNews.status,
-                twitter: twitterNews.status,
-                weibo: weiboNews.status,
-                youtube: youtubeNews.status
-            });
-
             if (rssNews.status === 'fulfilled') allNews = allNews.concat(rssNews.value);
             if (redditNews.status === 'fulfilled') allNews = allNews.concat(redditNews.value);
             if (twitterNews.status === 'fulfilled') allNews = allNews.concat(twitterNews.value);
             if (weiboNews.status === 'fulfilled') {
-                console.log('Weibo news count:', weiboNews.value.length);
                 allNews = allNews.concat(weiboNews.value);
-            } else {
-                console.error('Weibo failed:', weiboNews.reason);
             }
             if (youtubeNews.status === 'fulfilled') allNews = allNews.concat(youtubeNews.value);
 
