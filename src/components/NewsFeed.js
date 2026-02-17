@@ -7,13 +7,15 @@ import { APICache } from '@/lib/cache';
 
 export default function NewsFeed() {
     const [displayedNews, setDisplayedNews] = useState([]);
-    const [reservePool, setReservePool] = useState([]);
+    // Reserve pool is now an object: { 'Weibo': [], 'Twitter': [], ... }
+    const [reservePool, setReservePool] = useState({});
     const [deletedIds, setDeletedIds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [cacheStatus, setCacheStatus] = useState(null);
 
-    const INITIAL_DISPLAY_COUNT = 30; // 初始显示数量
+    const DISPLAY_COUNT_PER_SOURCE = 5; // 每类显示5条
+    const RESERVE_COUNT_PER_SOURCE = 10; // 每类备用10条
 
     const fetchNews = async (forceRefresh = false) => {
         setLoading(true);
@@ -63,48 +65,73 @@ export default function NewsFeed() {
         const storedDeletedIds = JSON.parse(localStorage.getItem('deletedNewsIds') || '[]');
         setDeletedIds(storedDeletedIds);
 
-        // 1. Filter and Process
-        let validNews = newsData.filter(item => !storedDeletedIds.includes(item.id));
+        // 1. Group by Source
+        const groups = {};
+        newsData.forEach(item => {
+            if (storedDeletedIds.includes(item.id)) return;
+            const source = item.source || 'Other';
+            if (!groups[source]) groups[source] = [];
+            groups[source].push(item);
+        });
 
-        // 2. 特殊处理微博: 跳过前3条 (Rank 1-3)
-        //    我们需要先按源分离出微博，处理完后再合并
-        const weiboItems = validNews.filter(item => item.source === '微博热搜');
-        const otherItems = validNews.filter(item => item.source !== '微博热搜');
+        // 2. Process Quotas
+        let initialDisplay = [];
+        const newReservePool = {};
 
-        let processedWeibo = weiboItems;
-        if (processedWeibo.length > 3) {
-            processedWeibo = processedWeibo.slice(3);
-        } else if (processedWeibo.length > 0 && processedWeibo.length <= 3) {
-            // 如果只有3条或更少，全丢弃？或者保留？
-            // 假设是为了去掉置顶广告，通常前3是置顶。如果数据源本来就少，全丢弃可能导致空。
-            // 这里严格执行规则：丢弃前3。
-            processedWeibo = [];
-        }
+        Object.keys(groups).forEach(source => {
+            let items = groups[source];
 
-        // 3. 合并并排序 (时间倒序)
-        let allItems = [...processedWeibo, ...otherItems];
-        allItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            // Special handling for Weibo: skip top 3
+            if (source === '微博热搜') {
+                if (items.length > 3) {
+                    items = items.slice(3);
+                } else {
+                    items = [];
+                }
+            }
 
-        // 4. 切分显示和备用
-        setDisplayedNews(allItems.slice(0, INITIAL_DISPLAY_COUNT));
-        setReservePool(allItems.slice(INITIAL_DISPLAY_COUNT));
+            // Extract Quota
+            const toDisplay = items.slice(0, DISPLAY_COUNT_PER_SOURCE);
+            const toReserve = items.slice(DISPLAY_COUNT_PER_SOURCE, DISPLAY_COUNT_PER_SOURCE + RESERVE_COUNT_PER_SOURCE);
+
+            initialDisplay = initialDisplay.concat(toDisplay);
+            newReservePool[source] = toReserve;
+        });
+
+        // 3. Sort/Mix Display List (Time Descending)
+        initialDisplay.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        setDisplayedNews(initialDisplay);
+        setReservePool(newReservePool);
     };
 
-    const handleDeleteCard = (cardId) => {
+    const handleDeleteCard = (cardId, source) => {
+        // 1. Update Deleted IDs
         const newDeletedIds = [...deletedIds, cardId];
         setDeletedIds(newDeletedIds);
         localStorage.setItem('deletedNewsIds', JSON.stringify(newDeletedIds));
 
+        // 2. Prepare Replacement
+        // Use current reservePool from closure (acceptable for UI action)
+        let newItem = null;
+        let newReservePoolState = { ...reservePool };
+        const currentSourceReserve = newReservePoolState[source] || [];
+
+        if (currentSourceReserve.length > 0) {
+            newItem = currentSourceReserve[0];
+
+            // Update Reserve Pool State
+            newReservePoolState[source] = currentSourceReserve.slice(1);
+            setReservePool(newReservePoolState);
+        }
+
+        // 3. Update Display List
         setDisplayedNews(prev => {
             const filtered = prev.filter(item => item.id !== cardId);
-
-            // 从备用池补充一条
-            if (reservePool.length > 0) {
-                const nextItem = reservePool[0];
-                setReservePool(pool => pool.slice(1));
-                return [...filtered, nextItem];
+            if (newItem) {
+                // Append replacement to end
+                return [...filtered, newItem];
             }
-
             return filtered;
         });
     };
@@ -168,7 +195,8 @@ export default function NewsFeed() {
                         <NewsCard
                             key={item.id}
                             item={item}
-                            onDelete={() => handleDeleteCard(item.id)}
+                            // Pass source explicitly derived from item
+                            onDelete={() => handleDeleteCard(item.id, item.source)}
                         />
                     ))
                 )}
@@ -182,7 +210,7 @@ export default function NewsFeed() {
 
             <footer className={styles.footer}>
                 <div className={styles.footerContent}>
-                    <span>v0.14.0</span>
+                    <span>v0.15.1</span>
                     <span>•</span>
                     <span>下拉刷新</span>
                     <span>•</span>
