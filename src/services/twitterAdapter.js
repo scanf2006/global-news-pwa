@@ -6,8 +6,9 @@ export const TwitterAdapter = {
             // 使用 getdaytrends.com 作为主要数据源
             // 备用: us.trend-calendar.com (如果主源失败)
             const sources = [
-                'https://getdaytrends.com/', // Root page
-                'https://us.trend-calendar.com/'
+                'https://getdaytrends.com/united-states/', // US Trends (Requested)
+                'https://getdaytrends.com/', // Global fallback
+                'https://us.trend-calendar.com/' // Backup source
             ];
 
             for (const url of sources) {
