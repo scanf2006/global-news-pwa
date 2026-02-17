@@ -1,4 +1,4 @@
-﻿// 微博热搜适配器 - 集成多个可靠源(包括GitHub Pages)
+﻿// 微博热搜适配器 - 集成多个可靠源(包括CDN加速)
 export const WeiboAdapter = {
     async fetchHotSearch() {
         console.log('--- WeiboAdapter.fetchHotSearch START ---');
@@ -7,28 +7,20 @@ export const WeiboAdapter = {
             // 尝试多个API源
             const sources = [
                 {
-                    // 方案1: GitHub Pages (justjavac项目) - 极其稳定,每小时更新
-                    // 项目地址: https://github.com/justjavac/weibo-trending-hot-search
+                    // 方案1: GitHub Pages (Cloudflare CDN)
                     name: 'github-pages',
                     url: 'https://weibo-trending-hot-search.pages.dev/hot-search.json',
-                    parser: (data) => {
-                        // 数据格式: array of { title, url, hot, ... }
-                        if (Array.isArray(data)) {
-                            return data.slice(0, 10).map((item, index) => ({
-                                id: `weibo-gh-${index}-${Date.now()}`,
-                                title: item.title || item.word,
-                                url: item.url || `https://s.weibo.com/weibo?q=${encodeURIComponent(item.title || item.word)}`,
-                                source: '微博热搜', // 保持源名称一致
-                                rank: index + 1,
-                                views: item.hot || item.num || 0,
-                                titleOriginal: item.title || item.word,
-                                timestamp: new Date().toISOString() // 必须包含时间戳
-                            }));
-                        }
-                        return null;
-                    }
+                    parser: (data) => parseGithubData(data, 'github-pages')
                 },
                 {
+                    // 方案2: jsDelivr CDN (GitHub代理) - 非常极速和稳定
+                    // 如果Pages挂了,这个通常还能用
+                    name: 'jsdelivr',
+                    url: 'https://fastly.jsdelivr.net/gh/justjavac/weibo-trending-hot-search@master/hot-search.json',
+                    parser: (data) => parseGithubData(data, 'jsdelivr')
+                },
+                {
+                    // 方案3: 备用 API (vvhan)
                     name: 'vvhan',
                     url: 'https://api.vvhan.com/api/hotlist/weiboHot',
                     parser: (data) => {
@@ -48,6 +40,7 @@ export const WeiboAdapter = {
                     }
                 },
                 {
+                    // 方案4: 备用 API (oioweb)
                     name: 'oioweb',
                     url: 'https://api.oioweb.cn/api/common/HotList?type=weibo',
                     parser: (data) => {
@@ -72,9 +65,8 @@ export const WeiboAdapter = {
             for (const source of sources) {
                 try {
                     console.log(`Trying Weibo source: ${source.name}`);
-                    // 缩短超时时间以便快速失败
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
 
                     const response = await fetch(source.url, {
                         headers: {
@@ -85,12 +77,20 @@ export const WeiboAdapter = {
                     clearTimeout(timeoutId);
 
                     if (response.ok) {
+                        // 检查内容类型,防止返回HTML错误页
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('text/html')) {
+                            throw new Error('Received HTML instead of JSON');
+                        }
+
                         const data = await response.json();
                         const parsed = source.parser(data);
                         if (parsed && parsed.length > 0) {
                             console.log(`Weibo ${source.name} success:`, parsed.length, 'items');
                             return parsed;
                         }
+                    } else {
+                        console.warn(`Weibo ${source.name} returned status: ${response.status}`);
                     }
                 } catch (error) {
                     console.warn(`Weibo ${source.name} failed:`, error.message);
@@ -130,3 +130,20 @@ export const WeiboAdapter = {
         return fallbackData;
     }
 };
+
+// 辅助函数: 解析GitHub数据格式
+function parseGithubData(data, sourceName) {
+    if (Array.isArray(data)) {
+        return data.slice(0, 10).map((item, index) => ({
+            id: `weibo-${sourceName}-${index}-${Date.now()}`,
+            title: item.title || item.word,
+            url: item.url || `https://s.weibo.com/weibo?q=${encodeURIComponent(item.title || item.word)}`,
+            source: '微博热搜',
+            rank: index + 1,
+            views: item.hot || item.num || 0,
+            titleOriginal: item.title || item.word,
+            timestamp: new Date().toISOString() // 必须包含时间戳
+        }));
+    }
+    return null;
+}
