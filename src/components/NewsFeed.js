@@ -23,11 +23,11 @@ export default function NewsFeed() {
         try {
             // Check Cache
             if (!forceRefresh) {
-                const cached = APICache.get('news');
+                const cached = APICache.get('news_v2');
                 if (cached) {
                     initializeNewsLists(cached);
                     setLoading(false);
-                    const cacheInfo = APICache.getInfo('news');
+                    const cacheInfo = APICache.getInfo('news_v2');
                     if (cacheInfo) {
                         setCacheStatus({
                             fromCache: true,
@@ -46,7 +46,7 @@ export default function NewsFeed() {
                 initializeNewsLists(data.data);
 
                 // Cache Data
-                APICache.set('news', data.data);
+                APICache.set('news_v2', data.data);
                 setCacheStatus({
                     fromCache: false,
                     age: 0,
