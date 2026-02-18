@@ -1,7 +1,7 @@
 export const RedditAdapter = {
     async fetchTrending() {
         try {
-            const response = await fetch('https://www.reddit.com/r/popular.json?limit=10');
+            const response = await fetch('https://www.reddit.com/r/popular.json?limit=20');
             const data = await response.json();
 
             return data.data.children.map(child => {
