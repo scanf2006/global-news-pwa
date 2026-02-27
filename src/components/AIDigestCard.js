@@ -12,7 +12,15 @@ export default function AIDigestCard() {
     useEffect(() => {
         const fetchDigest = async () => {
             try {
-                const res = await fetch('/api/digest');
+                // Get keys from local storage
+                const localApiKey = localStorage.getItem('user_openai_api_key') || '';
+                const localBaseUrl = localStorage.getItem('user_openai_base_url') || '';
+
+                const headers = {};
+                if (localApiKey) headers['x-user-openai-key'] = localApiKey;
+                if (localBaseUrl) headers['x-user-openai-base'] = localBaseUrl;
+
+                const res = await fetch('/api/digest', { headers });
                 const data = await res.json();
                 if (data.success && data.data) {
                     setDigest(data.data);

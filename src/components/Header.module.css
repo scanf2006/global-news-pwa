@@ -54,14 +54,25 @@
     border-radius: 0 0 20px 20px;
 }
 
+.topRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
 .title {
     font-size: 1.5rem;
     margin: 0;
     color: #1e40af;
     font-weight: 700;
     letter-spacing: -0.5px;
-    position: relative;
-    z-index: 1;
+    /* Center text artificially relative to the flex container */
+    flex-grow: 1;
+    text-align: center;
+    padding-left: 32px;
+    /* balance out the settings btn width */
 }
 
 .subtitle {
@@ -71,4 +82,162 @@
     font-weight: 500;
     position: relative;
     z-index: 1;
+}
+
+.settingsBtn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.settingsBtn:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+/* Modal Styles */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.modalContent {
+    background: #0f172a;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.modalHeader h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 1.1rem;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.closeBtn:hover {
+    color: #f8fafc;
+}
+
+.modalBody {
+    padding: 1.5rem;
+}
+
+.inputGroup {
+    margin-bottom: 1.25rem;
+    text-align: left;
+}
+
+.inputGroup:last-child {
+    margin-bottom: 0;
+}
+
+.inputGroup label {
+    display: block;
+    color: #cbd5e1;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.inputGroup input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #f8fafc;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+
+.inputGroup input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.inputGroup small {
+    display: block;
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+    line-height: 1.4;
+}
+
+.modalFooter {
+    padding: 1.25rem 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.saveBtn {
+    width: 100%;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.saveBtn:hover {
+    background: #2563eb;
 }

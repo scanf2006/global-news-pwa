@@ -2,21 +2,29 @@ import { NextResponse } from 'next/server';
 import { NewsAggregator } from '@/services/newsAggregator';
 import { APICache } from '@/lib/cache';
 
-export async function GET() {
+export async function GET(request) {
     try {
+        // Retrieve custom keys from headers first
+        const reqHeaders = new Headers(request.headers);
+        const userApiKey = reqHeaders.get('x-user-openai-key');
+        const userBaseUrl = reqHeaders.get('x-user-openai-base');
+
+        const apiKey = userApiKey || process.env.OPENAI_API_KEY;
+        const baseUrl = userBaseUrl || process.env.OPENAI_API_BASE_URL || 'https://api.openai.com/v1';
+
         // 1. Check if we have a cached digest (cache for 4 hours to save tokens)
-        const cachedDigest = APICache.get('ai_digest_v1');
+        // Differentiate cache key if the user provided their own API key, so they can test their own generations instantly
+        const cacheKey = userApiKey ? `ai_digest_v1_custom_${userApiKey.slice(-4)}` : 'ai_digest_v1';
+
+        const cachedDigest = APICache.get(cacheKey);
         if (cachedDigest) {
             return NextResponse.json({ success: true, data: cachedDigest });
         }
 
-        const apiKey = process.env.OPENAI_API_KEY;
-        const baseUrl = process.env.OPENAI_API_BASE_URL || 'https://api.openai.com/v1';
-
         // Graceful degradation if no API key is set
         if (!apiKey) {
             const fallbackData = {
-                content: "### 🤖 AI 简报暂未开启\n\n系统检测到未配置大模型 API Key。您可以随时在环境变量中配置 `OPENAI_API_KEY` 来激活自动生成全球新闻摘要的超能力。\n\n*提示: 支持 OpenAI、DeepSeek 及其他兼容格式的模型。*",
+                content: "### 🤖 AI 简报暂未开启\n\n系统检测到未配置大模型 API Key。您可以随时点击网页上方或环境变量中配置 `OPENAI_API_KEY` 来激活自动生成全球新闻摘要的超能力。\n\n*提示: 支持 OpenAI、DeepSeek 及其他兼容格式的模型。*",
                 timestamp: new Date().toISOString(),
                 isMock: true
             };
@@ -81,7 +89,7 @@ export async function GET() {
         };
 
         // Cache for 4 hours (14400 seconds)
-        APICache.set('ai_digest_v1', digestData, 14400);
+        APICache.set(cacheKey, digestData, 14400);
 
         return NextResponse.json({ success: true, data: digestData });
 
