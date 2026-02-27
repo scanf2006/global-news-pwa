@@ -71,7 +71,8 @@
     line-height: 1.6;
     color: var(--foreground);
     position: relative;
-    transition: max-height 0.3s ease-out;
+    max-height: 5000px;
+    transition: max-height 0.5s ease-in-out;
 }
 
 .content :global(h1),

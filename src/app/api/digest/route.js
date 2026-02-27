@@ -73,8 +73,7 @@ export async function GET(request) {
                     { role: 'system', content: 'You are an objective news editor.' },
                     { role: 'user', content: promptStr }
                 ],
-                temperature: 0.5,
-                max_tokens: 1500
+                temperature: 0.5
             })
         });
 
@@ -85,7 +84,12 @@ export async function GET(request) {
         }
 
         const completion = await response.json();
-        const digestContent = completion.choices?.[0]?.message?.content || '生成简报失败。';
+        let digestContent = completion.choices?.[0]?.message?.content || '生成简报失败。';
+        const finishReason = completion.choices?.[0]?.finish_reason || 'unknown';
+
+        if (finishReason !== 'stop' && finishReason !== 'unknown') {
+            digestContent += `\n\n*(Debug: 摘要被意外截断。Finish Reason: ${finishReason})*`;
+        }
 
         const digestData = {
             content: digestContent,
