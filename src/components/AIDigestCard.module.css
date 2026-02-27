@@ -1,0 +1,174 @@
+/* Glassmorphism Pro Max 卡片基础 */
+.card {
+    display: block;
+    position: relative;
+    width: 100%;
+    margin-bottom: 2rem;
+    /* 独立于新闻列表的额外间距 */
+    text-decoration: none;
+    color: inherit;
+    box-sizing: border-box;
+    overflow: hidden;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(124, 58, 237, 0.1);
+
+    /* 极光背景叠加 */
+    background-image:
+        radial-gradient(circle at top right, rgba(124, 58, 237, 0.1), transparent 50%),
+        radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.1), transparent 50%);
+}
+
+.mockVariant {
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    background-image: none;
+    box-shadow: none;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(to right, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.icon {
+    font-size: 1.1em;
+    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.6));
+}
+
+.time {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+}
+
+.content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--foreground);
+    position: relative;
+    transition: max-height 0.3s ease-out;
+}
+
+.content :global(h1),
+.content :global(h2),
+.content :global(h3) {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: #f1f5f9;
+}
+
+.content :global(p) {
+    margin-bottom: 0.75rem;
+}
+
+.content :global(ul) {
+    padding-left: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.content :global(li) {
+    margin-bottom: 0.25rem;
+}
+
+.collapsed {
+    max-height: 120px;
+    overflow: hidden;
+}
+
+.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.95), transparent);
+    pointer-events: none;
+}
+
+.expandButton {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: transparent;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.expandButton:hover {
+    color: #60a5fa;
+}
+
+/* Skeleton Loading */
+.skeletonCard {
+    height: 200px;
+}
+
+.skeletonTitle {
+    height: 24px;
+    width: 40%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 2rem;
+}
+
+.skeletonLine {
+    height: 12px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.skeletonCard::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0,
+            rgba(255, 255, 255, 0.05) 20%,
+            rgba(255, 255, 255, 0.1) 60%,
+            rgba(255, 255, 255, 0));
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
