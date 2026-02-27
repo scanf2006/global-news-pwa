@@ -53,7 +53,7 @@ export async function GET(request) {
         });
 
         // 4. Build Prompt
-        let promptStr = "你是一个专业、客观的全球新闻编辑。请将以下按数据源分类的热点新闻，总结成一份50-100字的精简早/晚报。\n\n";
+        let promptStr = "你是一个专业、客观的全球新闻编辑。请将以下按数据源分类的热点新闻，进行综合分析并总结成一份结构化的高质量早/晚报（建议篇幅在300-500字）。\n\n";
         promptStr += "要求：\n1. 结构清晰，可使用粗体和emoji。\n2. 提炼出跨平台被同时讨论的'焦点事件'，去重去闲聊。\n3. 直接输出Markdown格式正文，不要有任何多余的寒暄。\n\n新闻数据：\n";
 
         for (const [source, titles] of Object.entries(topNewsBySource)) {
@@ -74,7 +74,7 @@ export async function GET(request) {
                     { role: 'user', content: promptStr }
                 ],
                 temperature: 0.5,
-                max_tokens: 500
+                max_tokens: 1500
             })
         });
 
