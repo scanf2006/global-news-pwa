@@ -7,11 +7,13 @@ export default function Header() {
     const [showSettings, setShowSettings] = useState(false);
     const [apiKey, setApiKey] = useState('');
     const [baseUrl, setBaseUrl] = useState('');
+    const [model, setModel] = useState('');
 
     useEffect(() => {
         // Load existing settings on mount
         setApiKey(localStorage.getItem('user_openai_api_key') || '');
         setBaseUrl(localStorage.getItem('user_openai_base_url') || '');
+        setModel(localStorage.getItem('user_openai_model') || '');
     }, []);
 
     const handleSave = () => {
@@ -20,6 +22,9 @@ export default function Header() {
 
         if (baseUrl) localStorage.setItem('user_openai_base_url', baseUrl.trim());
         else localStorage.removeItem('user_openai_base_url');
+
+        if (model) localStorage.setItem('user_openai_model', model.trim());
+        else localStorage.removeItem('user_openai_model');
 
         setShowSettings(false);
         // Force reload to apply changes globally
@@ -74,6 +79,16 @@ export default function Header() {
                                     onChange={(e) => setBaseUrl(e.target.value)}
                                 />
                                 <small>如果不填，默认使用 OpenAI 官方接口。</small>
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label>Model (模型名称, 选填)</label>
+                                <input
+                                    type="text"
+                                    placeholder="例如: deepseek-chat 或 Qwen/Qwen2.5-7B-Instruct"
+                                    value={model}
+                                    onChange={(e) => setModel(e.target.value)}
+                                />
+                                <small>如果不填，默认使用 gpt-3.5-turbo。</small>
                             </div>
                         </div>
                         <div className={styles.modalFooter}>

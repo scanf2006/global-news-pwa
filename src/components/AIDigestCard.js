@@ -15,10 +15,15 @@ export default function AIDigestCard() {
                 // Get keys from local storage
                 const localApiKey = localStorage.getItem('user_openai_api_key') || '';
                 const localBaseUrl = localStorage.getItem('user_openai_base_url') || '';
+                const localModel = localStorage.getItem('user_openai_model') || '';
 
                 const headers = {};
                 if (localApiKey) headers['x-user-openai-key'] = localApiKey;
                 if (localBaseUrl) headers['x-user-openai-base'] = localBaseUrl;
+                if (localModel) headers['x-user-openai-model'] = localModel;
+
+                // Disable default caching mechanism if user configured custom settings to force real-time testing
+                if (localApiKey) headers['cache-control'] = 'no-cache';
 
                 const res = await fetch('/api/digest', { headers });
                 const data = await res.json();

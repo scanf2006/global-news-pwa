@@ -8,17 +8,22 @@ export async function GET(request) {
         const reqHeaders = new Headers(request.headers);
         const userApiKey = reqHeaders.get('x-user-openai-key');
         const userBaseUrl = reqHeaders.get('x-user-openai-base');
+        const userModel = reqHeaders.get('x-user-openai-model');
+        const skipCache = reqHeaders.get('cache-control') === 'no-cache';
 
         const apiKey = userApiKey || process.env.OPENAI_API_KEY;
         const baseUrl = userBaseUrl || process.env.OPENAI_API_BASE_URL || 'https://api.openai.com/v1';
+        const modelName = userModel || 'gpt-3.5-turbo';
 
         // 1. Check if we have a cached digest (cache for 4 hours to save tokens)
         // Differentiate cache key if the user provided their own API key, so they can test their own generations instantly
         const cacheKey = userApiKey ? `ai_digest_v1_custom_${userApiKey.slice(-4)}` : 'ai_digest_v1';
 
-        const cachedDigest = APICache.get(cacheKey);
-        if (cachedDigest) {
-            return NextResponse.json({ success: true, data: cachedDigest });
+        if (!skipCache) {
+            const cachedDigest = APICache.get(cacheKey);
+            if (cachedDigest) {
+                return NextResponse.json({ success: true, data: cachedDigest });
+            }
         }
 
         // Graceful degradation if no API key is set
@@ -63,7 +68,7 @@ export async function GET(request) {
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: 'gpt-3.5-turbo', // Or any default
+                model: modelName,
                 messages: [
                     { role: 'system', content: 'You are an objective news editor.' },
                     { role: 'user', content: promptStr }
