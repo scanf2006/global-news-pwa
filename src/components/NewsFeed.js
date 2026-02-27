@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import NewsCard from './NewsCard';
+import AIDigestCard from './AIDigestCard';
 import styles from './NewsFeed.module.css';
 import { APICache } from '@/lib/cache';
+import packageJson from '../../package.json';
 
 export default function NewsFeed() {
     const [displayedNews, setDisplayedNews] = useState([]);
@@ -184,6 +186,10 @@ export default function NewsFeed() {
                     🔄 正在刷新...
                 </div>
             )}
+
+            <div style={{ padding: '1rem 1.5rem 0', maxWidth: '1400px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+                <AIDigestCard />
+            </div>
 
             <div className={styles.grid}>
                 {loading && displayedNews.length === 0 ? (
