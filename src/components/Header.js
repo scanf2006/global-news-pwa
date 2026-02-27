@@ -68,23 +68,23 @@ export default function Header() {
                                     value={apiKey}
                                     onChange={(e) => setApiKey(e.target.value)}
                                 />
-                                <small>支持 OpenAI、DeepSeek、SiliconFlow 等兼容格式及平台。</small>
+                                <small>支持 OpenAI, DeepSeek, Gemini (兼容模式) 等平台。</small>
                             </div>
                             <div className={styles.inputGroup}>
                                 <label>Base URL (选填)</label>
                                 <input
                                     type="text"
-                                    placeholder="例如: https://api.deepseek.com/v1"
+                                    placeholder="默认 OpenAI。若用 Gemini 填: https://generativelanguage.googleapis.com/v1beta/openai"
                                     value={baseUrl}
                                     onChange={(e) => setBaseUrl(e.target.value)}
                                 />
-                                <small>如果不填，默认使用 OpenAI 官方接口。</small>
+                                <small>填入平台完整的兼容版 /v1 或 /openai 端点。</small>
                             </div>
                             <div className={styles.inputGroup}>
                                 <label>Model (模型名称, 选填)</label>
                                 <input
                                     type="text"
-                                    placeholder="例如: deepseek-chat 或 Qwen/Qwen2.5-7B-Instruct"
+                                    placeholder="例如: gemini-2.5-flash 或 deepseek-chat"
                                     value={model}
                                     onChange={(e) => setModel(e.target.value)}
                                 />
