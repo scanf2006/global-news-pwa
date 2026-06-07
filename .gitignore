@@ -36,6 +36,7 @@ yarn-error.log*
 
 # test files
 test_*.js
+live-news.json
 
 # Sentry
 .sentryclirc
