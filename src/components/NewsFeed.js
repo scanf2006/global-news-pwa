@@ -3,17 +3,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import packageJson from '../../package.json';
 import { APICache } from '@/lib/cache';
-import { formatRelativeAge } from '@/services/serviceUtils';
+import { containsCjk, formatRelativeAge } from '@/services/serviceUtils';
 import NewsCard from './NewsCard';
 import styles from './NewsFeed.module.css';
 
 const DISPLAY_COUNT_PER_SOURCE = 5;
 const RESERVE_COUNT_PER_SOURCE = 10;
-const NEWS_CACHE_KEY = `news_${packageJson.version}`;
+const NEWS_CACHE_KEY = `news_v2_${packageJson.version}`;
 const DELETED_IDS_KEY = 'deletedNewsIds';
 
 function sortByTimestamp(items) {
     return [...items].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function hasMissingEnglishTranslation(item) {
+    const original = String(item?.titleOriginal || '').trim();
+    const translated = String(item?.titleTranslated || '').trim();
+
+    if (!original || containsCjk(original)) {
+        return false;
+    }
+
+    if (!translated) {
+        return true;
+    }
+
+    return translated === original;
+}
+
+function isUsableCachedNews(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+        return false;
+    }
+
+    return !items.some(hasMissingEnglishTranslation);
 }
 
 export default function NewsFeed() {
@@ -72,7 +95,7 @@ export default function NewsFeed() {
         try {
             if (!forceRefresh) {
                 const cached = APICache.get(NEWS_CACHE_KEY);
-                if (cached) {
+                if (isUsableCachedNews(cached)) {
                     initializeNewsLists(cached);
                     const cacheInfo = APICache.getInfo(NEWS_CACHE_KEY);
                     if (cacheInfo) {
@@ -83,6 +106,10 @@ export default function NewsFeed() {
                         });
                     }
                     return;
+                }
+
+                if (cached) {
+                    APICache.remove(NEWS_CACHE_KEY);
                 }
             }
 
