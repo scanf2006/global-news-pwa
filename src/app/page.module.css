@@ -1,18 +1,18 @@
 .main {
-  padding-top: 6.65rem;
+  padding-top: 5.5rem;
   padding-bottom: 2rem;
 }
 
 @media (max-width: 768px) {
   .main {
-    padding-top: 6.2rem;
+    padding-top: 5.15rem;
     padding-bottom: 1.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .main {
-    padding-top: 5.9rem;
+    padding-top: 4.95rem;
     padding-bottom: 1.25rem;
   }
 }

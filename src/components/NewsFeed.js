@@ -4,13 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import packageJson from '../../package.json';
 import { APICache } from '@/lib/cache';
 import { formatRelativeAge } from '@/services/serviceUtils';
-import AIDigestCard from './AIDigestCard';
 import NewsCard from './NewsCard';
 import styles from './NewsFeed.module.css';
 
 const DISPLAY_COUNT_PER_SOURCE = 5;
 const RESERVE_COUNT_PER_SOURCE = 10;
-const NEWS_CACHE_KEY = 'news_v2';
+const NEWS_CACHE_KEY = `news_${packageJson.version}`;
 const DELETED_IDS_KEY = 'deletedNewsIds';
 
 function sortByTimestamp(items) {
@@ -19,7 +18,6 @@ function sortByTimestamp(items) {
 
 export default function NewsFeed() {
     const [displayedNews, setDisplayedNews] = useState([]);
-    const [allNews, setAllNews] = useState([]);
     const [reservePool, setReservePool] = useState({});
     const [deletedIds, setDeletedIds] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -28,7 +26,6 @@ export default function NewsFeed() {
     const pullStartY = useRef(null);
 
     const initializeNewsLists = useCallback((newsData) => {
-        setAllNews(sortByTimestamp(newsData));
         const storedDeletedIds = JSON.parse(localStorage.getItem(DELETED_IDS_KEY) || '[]');
         setDeletedIds(storedDeletedIds);
 
@@ -175,10 +172,6 @@ export default function NewsFeed() {
             onTouchEnd={handleTouchEnd}
         >
             {isRefreshing && <div className={styles.refreshState}>正在刷新热点...</div>}
-
-            <div className={styles.overviewWrap}>
-                <AIDigestCard newsItems={allNews} />
-            </div>
 
             <div className={styles.grid}>
                 {loading && displayedNews.length === 0 ? (
