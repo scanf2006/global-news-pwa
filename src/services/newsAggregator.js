@@ -87,8 +87,49 @@ function mergeSimilarNewsItems(items) {
     }));
 }
 
-async function translateBatch(items) {
+async function translateWithGoogleApiX(text) {
     const { translate } = await import('google-translate-api-x');
+    const result = await translate(text, { to: 'zh-CN' });
+    return result?.text || '';
+}
+
+async function translateWithGoogleEndpoint(text) {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-CN&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+        headers: {
+            Accept: 'application/json,text/plain,*/*',
+            'User-Agent': 'Mozilla/5.0',
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Google endpoint returned ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const translated = payload?.[0]
+        ?.map((segment) => segment?.[0] || '')
+        .join('')
+        .trim();
+
+    return translated || '';
+}
+
+async function translateText(text) {
+    try {
+        const translated = await translateWithGoogleApiX(text);
+        if (translated && translated !== text) {
+            return translated;
+        }
+    } catch (error) {
+        console.warn('[Translation] google-translate-api-x failed:', error.message);
+    }
+
+    const fallbackTranslated = await translateWithGoogleEndpoint(text);
+    return fallbackTranslated || text;
+}
+
+async function translateBatch(items) {
     const translateQueue = [];
 
     for (const item of items) {
@@ -96,7 +137,7 @@ async function translateBatch(items) {
             continue;
         }
 
-        if (containsCjk(item.titleOriginal) || item.source === '微博热搜' || item.source === 'Xiaohongshu') {
+        if (containsCjk(item.titleOriginal)) {
             item.titleTranslated = item.titleOriginal;
             continue;
         }
@@ -114,9 +155,10 @@ async function translateBatch(items) {
         await Promise.allSettled(
             chunk.map(async (item) => {
                 try {
-                    const result = await translate(item.titleOriginal, { to: 'zh-CN' });
-                    translationCache.set(item.titleOriginal, result.text);
-                    item.titleTranslated = result.text;
+                    const translated = await translateText(item.titleOriginal);
+                    const finalText = translated || item.titleOriginal;
+                    translationCache.set(item.titleOriginal, finalText);
+                    item.titleTranslated = finalText;
                 } catch (error) {
                     console.error('Translation failed for item:', item.id, error.message);
                     item.titleTranslated = item.titleOriginal;
