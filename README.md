@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Global News PWA
 
-## Getting Started
+一个自用的全球热点聚合 PWA，基于 `Next.js 16` 和 `App Router`。
 
-First, run the development server:
+## 功能
+
+- 聚合 RSS、Reddit、X、微博、YouTube 等来源的热点内容
+- 自动将非中文标题翻译为中文
+- 支持基于本地聚合结果生成热点概览
+- 支持本地缓存、下拉刷新、左滑删除卡片
+- 支持安装为 PWA
+
+## 本地运行
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 [http://localhost:3000](http://localhost:3000)。
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 常用命令
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev
+npm run lint
+npm run build
+npm run start
+```
 
-## Learn More
+## 环境变量
 
-To learn more about Next.js, take a look at the following resources:
+- `YOUTUBE_API_KEY`
+- `NEXT_PUBLIC_SENTRY_DSN`
+- `NEXT_PUBLIC_APP_VERSION`
+- `XIAOHONGSHU_API_KEY`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 结构说明
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/app/api/news/route.js`: 聚合新闻 API
+- `src/app/api/digest/route.js`: 已停用的旧 AI 摘要接口，占位返回 410
+- `src/app/api/diagnostics/route.js`: 开发环境 YouTube 健康检查
+- `src/app/api/diagnostics/weibo/route.js`: 开发环境微博备用源检查
+- `src/services/*`: 各平台抓取与聚合逻辑
+- `src/components/*`: 页面组件
+- `public/manifest.json`: PWA 清单
 
-## Deploy on Vercel
+## 健康检查
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 开发环境可访问 `/api/diagnostics`
+- 开发环境可访问 `/api/diagnostics/weibo`
+- 发布前至少执行一次 `npm run lint` 和 `npm run build`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 依赖与安全说明
+
+- 已升级 `next` 和 `@sentry/nextjs` 到当前可直接修复的安全版本
+- 剩余 `npm audit` 结果主要集中在 PWA / bundler 生态的传递依赖，处理时优先验证 `npm run build`
+- 不建议为了清空审计结果而盲目强行升级所有传递依赖，先看是否真的影响本地运行和打包
+
+## 当前约束
+
+- 首页概览卡完全基于本地聚合结果生成，不依赖外部模型

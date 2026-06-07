@@ -1,176 +1,162 @@
-/* Glassmorphism Pro Max 卡片基础 */
 .card {
     display: block;
     position: relative;
     width: 100%;
-    margin-bottom: 2rem;
-    /* 独立于新闻列表的额外间距 */
-    text-decoration: none;
+    margin-bottom: 1.1rem;
     color: inherit;
     box-sizing: border-box;
     overflow: hidden;
-
-    background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-
-    /* Subtle shadow for light mode */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-
-    /* Very subtle gradient overlay */
-    background-image:
-        radial-gradient(circle at top right, rgba(255, 255, 255, 0.5), transparent 50%),
-        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.3), transparent 50%);
-}
-
-.mockVariant {
-    border: 1px dashed rgba(255, 255, 255, 0.3);
-    background-image: none;
-    box-shadow: none;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.36)),
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 35%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 24px;
+    padding: 1.15rem 1.2rem 1.1rem;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 12px 24px rgba(59, 130, 246, 0.08);
 }
 
 .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 1rem;
     margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.headerText {
+    display: grid;
+    gap: 0.18rem;
+}
+
+.eyebrow {
+    color: #2563eb;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
 }
 
 .title {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: 1.16rem;
+    font-weight: 800;
     margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: linear-gradient(to right, #60a5fa, #a78bfa);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-.icon {
-    font-size: 1.1em;
-    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.6));
+    color: #0f172a;
+    letter-spacing: -0.03em;
 }
 
 .time {
-    font-size: 0.75rem;
-    color: #475569;
-    background: rgba(255, 255, 255, 0.5);
-    padding: 0.25rem 0.5rem;
-    border-radius: 1rem;
+    font-size: 0.74rem;
+    color: #334155;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 0.28rem 0.58rem;
+    border-radius: 999px;
+    white-space: nowrap;
 }
 
 .content {
-    font-size: 0.95rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.primarySection {
+    padding: 0.88rem 0.95rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.42);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.section {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.86rem 0.92rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.48);
+}
+
+.sectionTitle {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1d4ed8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.paragraph {
+    margin: 0;
+    font-size: 0.92rem;
     line-height: 1.6;
     color: #1e293b;
-    position: relative;
-    max-height: 5000px;
-    transition: max-height 0.5s ease-in-out;
 }
 
-.content :global(h1),
-.content :global(h2),
-.content :global(h3) {
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-    color: #0f172a;
+.badgeRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
 }
 
-.content :global(p) {
-    margin-bottom: 0.75rem;
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    padding: 0.34rem 0.62rem;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.08);
+    color: #1e40af;
+    font-size: 0.78rem;
+    font-weight: 700;
 }
 
-.content :global(ul) {
-    padding-left: 1.5rem;
-    margin-bottom: 0.75rem;
-}
-
-.content :global(li) {
-    margin-bottom: 0.25rem;
-}
-
-.collapsed {
-    max-height: 120px;
+.badgeName {
+    max-width: 10rem;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.collapsed::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background: linear-gradient(to top, rgba(241, 245, 249, 0.95), transparent);
-    pointer-events: none;
+.badgeCount {
+    color: #334155;
 }
 
-.expandButton {
-    display: block;
-    width: 100%;
-    text-align: center;
-    background: transparent;
-    border: none;
-    color: #3b82f6;
-    font-size: 0.875rem;
-    font-weight: 600;
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
-    cursor: pointer;
-    transition: color 0.2s;
+.list {
+    margin: 0;
+    padding-left: 1.05rem;
+    color: #1e293b;
+    display: grid;
+    gap: 0.46rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
 }
 
-.expandButton:hover {
-    color: #60a5fa;
+@media (max-width: 900px) {
+    .columns {
+        grid-template-columns: 1fr;
+    }
 }
 
-/* Skeleton Loading */
-.skeletonCard {
-    height: 200px;
-}
+@media (max-width: 640px) {
+    .card {
+        padding: 1rem;
+        border-radius: 20px;
+    }
 
-.skeletonTitle {
-    height: 24px;
-    width: 40%;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-    margin-bottom: 2rem;
-}
+    .header {
+        flex-direction: column;
+        gap: 0.45rem;
+    }
 
-.skeletonLine {
-    height: 12px;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: 4px;
-    margin-bottom: 1rem;
-}
-
-.skeletonCard::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    transform: translateX(-100%);
-    background: linear-gradient(90deg,
-            rgba(255, 255, 255, 0) 0,
-            rgba(255, 255, 255, 0.5) 20%,
-            rgba(255, 255, 255, 0.8) 60%,
-            rgba(255, 255, 255, 0));
-    animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-    100% {
-        transform: translateX(100%);
+    .time {
+        align-self: flex-start;
     }
 }

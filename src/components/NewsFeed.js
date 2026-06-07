@@ -1,58 +1,104 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import NewsCard from './NewsCard';
-import AIDigestCard from './AIDigestCard';
-import styles from './NewsFeed.module.css';
-import { APICache } from '@/lib/cache';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import packageJson from '../../package.json';
+import { APICache } from '@/lib/cache';
+import { formatRelativeAge } from '@/services/serviceUtils';
+import AIDigestCard from './AIDigestCard';
+import NewsCard from './NewsCard';
+import styles from './NewsFeed.module.css';
+
+const DISPLAY_COUNT_PER_SOURCE = 5;
+const RESERVE_COUNT_PER_SOURCE = 10;
+const NEWS_CACHE_KEY = 'news_v2';
+const DELETED_IDS_KEY = 'deletedNewsIds';
+
+function sortByTimestamp(items) {
+    return [...items].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
 
 export default function NewsFeed() {
     const [displayedNews, setDisplayedNews] = useState([]);
-    // Reserve pool is now an object: { 'Weibo': [], 'Twitter': [], ... }
+    const [allNews, setAllNews] = useState([]);
     const [reservePool, setReservePool] = useState({});
     const [deletedIds, setDeletedIds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [cacheStatus, setCacheStatus] = useState(null);
+    const pullStartY = useRef(null);
 
-    const DISPLAY_COUNT_PER_SOURCE = 5; // 每类显示5条
-    const RESERVE_COUNT_PER_SOURCE = 10; // 每类备用10条
+    const initializeNewsLists = useCallback((newsData) => {
+        setAllNews(sortByTimestamp(newsData));
+        const storedDeletedIds = JSON.parse(localStorage.getItem(DELETED_IDS_KEY) || '[]');
+        setDeletedIds(storedDeletedIds);
 
-    const fetchNews = async (forceRefresh = false) => {
+        const groups = {};
+        newsData.forEach((item) => {
+            if (storedDeletedIds.includes(item.id)) {
+                return;
+            }
+
+            const source = item.source || 'Other';
+            if (!groups[source]) {
+                groups[source] = [];
+            }
+            groups[source].push(item);
+        });
+
+        let initialDisplay = [];
+        const nextReservePool = {};
+
+        Object.keys(groups).forEach((source) => {
+            let items = groups[source];
+
+            if (source === '微博热搜') {
+                items = items.length > 3 ? items.slice(3) : [];
+            }
+
+            const toDisplay = items.slice(0, DISPLAY_COUNT_PER_SOURCE);
+            const toReserve = items.slice(
+                DISPLAY_COUNT_PER_SOURCE,
+                DISPLAY_COUNT_PER_SOURCE + RESERVE_COUNT_PER_SOURCE
+            );
+
+            initialDisplay = initialDisplay.concat(toDisplay);
+            nextReservePool[source] = toReserve;
+        });
+
+        setDisplayedNews(sortByTimestamp(initialDisplay));
+        setReservePool(nextReservePool);
+    }, []);
+
+    const fetchNews = useCallback(async (forceRefresh = false) => {
         setLoading(true);
 
         try {
-            // Check Cache
             if (!forceRefresh) {
-                const cached = APICache.get('news_v2');
+                const cached = APICache.get(NEWS_CACHE_KEY);
                 if (cached) {
                     initializeNewsLists(cached);
-                    setLoading(false);
-                    const cacheInfo = APICache.getInfo('news_v2');
+                    const cacheInfo = APICache.getInfo(NEWS_CACHE_KEY);
                     if (cacheInfo) {
                         setCacheStatus({
                             fromCache: true,
                             age: Math.floor(cacheInfo.age / 1000),
-                            remaining: Math.floor(cacheInfo.remaining / 1000)
+                            remaining: Math.floor(cacheInfo.remaining / 1000),
                         });
                     }
                     return;
                 }
             }
 
-            const res = await fetch('/api/news');
-            const data = await res.json();
+            const response = await fetch('/api/news');
+            const data = await response.json();
 
             if (data.success) {
                 initializeNewsLists(data.data);
-
-                // Cache Data
-                APICache.set('news_v2', data.data);
+                APICache.set(NEWS_CACHE_KEY, data.data);
                 setCacheStatus({
                     fromCache: false,
                     age: 0,
-                    remaining: 600
+                    remaining: 600,
                 });
             }
         } catch (error) {
@@ -61,118 +107,67 @@ export default function NewsFeed() {
             setLoading(false);
             setIsRefreshing(false);
         }
-    };
-
-    const initializeNewsLists = (newsData) => {
-        const storedDeletedIds = JSON.parse(localStorage.getItem('deletedNewsIds') || '[]');
-        setDeletedIds(storedDeletedIds);
-
-        // 1. Group by Source
-        const groups = {};
-        newsData.forEach(item => {
-            if (storedDeletedIds.includes(item.id)) return;
-            const source = item.source || 'Other';
-            if (!groups[source]) groups[source] = [];
-            groups[source].push(item);
-        });
-
-        // 2. Process Quotas
-        let initialDisplay = [];
-        const newReservePool = {};
-
-        Object.keys(groups).forEach(source => {
-            let items = groups[source];
-
-            // Special handling for Weibo: skip top 3
-            if (source === '微博热搜') {
-                if (items.length > 3) {
-                    items = items.slice(3);
-                } else {
-                    items = [];
-                }
-            }
-
-            // Extract Quota
-            const toDisplay = items.slice(0, DISPLAY_COUNT_PER_SOURCE);
-            const toReserve = items.slice(DISPLAY_COUNT_PER_SOURCE, DISPLAY_COUNT_PER_SOURCE + RESERVE_COUNT_PER_SOURCE);
-
-            initialDisplay = initialDisplay.concat(toDisplay);
-            newReservePool[source] = toReserve;
-        });
-
-        // 3. Sort/Mix Display List (Time Descending)
-        initialDisplay.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-        setDisplayedNews(initialDisplay);
-        setReservePool(newReservePool);
-    };
+    }, [initializeNewsLists]);
 
     const handleDeleteCard = (cardId, source) => {
-        // 1. Update Deleted IDs
-        const newDeletedIds = [...deletedIds, cardId];
-        setDeletedIds(newDeletedIds);
-        localStorage.setItem('deletedNewsIds', JSON.stringify(newDeletedIds));
+        const nextDeletedIds = [...deletedIds, cardId];
+        setDeletedIds(nextDeletedIds);
+        localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(nextDeletedIds));
 
-        // 2. Prepare Replacement
-        // Use current reservePool from closure (acceptable for UI action)
-        let newItem = null;
-        let newReservePoolState = { ...reservePool };
-        const currentSourceReserve = newReservePoolState[source] || [];
+        const nextReservePoolState = { ...reservePool };
+        const currentSourceReserve = nextReservePoolState[source] || [];
+        const replacementItem = currentSourceReserve[0] || null;
 
-        if (currentSourceReserve.length > 0) {
-            newItem = currentSourceReserve[0];
-
-            // Update Reserve Pool State
-            newReservePoolState[source] = currentSourceReserve.slice(1);
-            setReservePool(newReservePoolState);
+        if (replacementItem) {
+            nextReservePoolState[source] = currentSourceReserve.slice(1);
+            setReservePool(nextReservePoolState);
         }
 
-        // 3. Update Display List
-        setDisplayedNews(prev => {
-            const filtered = prev.filter(item => item.id !== cardId);
-            if (newItem) {
-                // Append replacement to end
-                return [...filtered, newItem];
-            }
-            return filtered;
+        setDisplayedNews((previous) => {
+            const filtered = previous.filter((item) => item.id !== cardId);
+            return replacementItem ? sortByTimestamp([...filtered, replacementItem]) : filtered;
         });
     };
 
-    const handleRefresh = () => {
+    const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
         fetchNews(true);
-    };
+    }, [fetchNews]);
 
     useEffect(() => {
         fetchNews();
         const interval = setInterval(() => {
             fetchNews(true);
         }, 10 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, []);
 
-    // Touch handling for pull-to-refresh
-    const handleTouchStart = (e) => {
+        return () => clearInterval(interval);
+    }, [fetchNews]);
+
+    const handleTouchStart = (event) => {
         if (window.scrollY === 0) {
-            const touch = e.touches[0];
-            window.pullStartY = touch.clientY;
+            pullStartY.current = event.touches[0].clientY;
         }
     };
 
-    const handleTouchMove = (e) => {
-        if (window.pullStartY && window.scrollY === 0) {
-            const touch = e.touches[0];
-            const pullDistance = touch.clientY - window.pullStartY;
-            if (pullDistance > 100 && !isRefreshing) {
-                handleRefresh();
-                window.pullStartY = null;
-            }
+    const handleTouchMove = (event) => {
+        if (pullStartY.current === null || window.scrollY !== 0) {
+            return;
+        }
+
+        const pullDistance = event.touches[0].clientY - pullStartY.current;
+        if (pullDistance > 100 && !isRefreshing) {
+            handleRefresh();
+            pullStartY.current = null;
         }
     };
 
     const handleTouchEnd = () => {
-        window.pullStartY = null;
+        pullStartY.current = null;
     };
+
+    const cacheText = cacheStatus?.fromCache
+        ? `缓存 ${formatRelativeAge(cacheStatus.age)}`
+        : '最新数据';
 
     return (
         <div
@@ -182,33 +177,30 @@ export default function NewsFeed() {
             onTouchEnd={handleTouchEnd}
         >
             {isRefreshing && (
-                <div style={{ textAlign: 'center', padding: '1rem', color: '#3b82f6', fontSize: '0.875rem' }}>
-                    🔄 正在刷新...
-                </div>
+                <div className={styles.refreshState}>正在刷新热点...</div>
             )}
 
-            <div style={{ padding: '1rem 1.5rem 0', maxWidth: '1400px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-                <AIDigestCard />
+            <div className={styles.overviewWrap}>
+                <AIDigestCard newsItems={allNews} />
             </div>
 
             <div className={styles.grid}>
                 {loading && displayedNews.length === 0 ? (
-                    [...Array(6)].map((_, i) => (
-                        <div key={i} className={styles.skeletonCard}></div>
+                    [...Array(6)].map((_, index) => (
+                        <div key={index} className={styles.skeletonCard}></div>
                     ))
                 ) : (
                     displayedNews.map((item) => (
                         <NewsCard
                             key={item.id}
                             item={item}
-                            // Pass source explicitly derived from item
                             onDelete={() => handleDeleteCard(item.id, item.source)}
                         />
                     ))
                 )}
 
                 {!loading && displayedNews.length === 0 && (
-                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                    <div className={styles.emptyState}>
                         暂无数据
                     </div>
                 )}
@@ -217,12 +209,14 @@ export default function NewsFeed() {
             <footer className={styles.footer}>
                 <div className={styles.footerContent}>
                     <span>v{packageJson.version}</span>
-                    <span>•</span>
+                    <span>·</span>
                     <span>下拉刷新</span>
-                    <span>•</span>
+                    <span>·</span>
                     <span>左滑删除</span>
-                    <span>•</span>
-                    <span>{cacheStatus?.fromCache ? '📦 缓存' : '🆕 最新'}</span>
+                    <span>·</span>
+                    <span>{displayedNews.length} 条展示中</span>
+                    <span>·</span>
+                    <span>{cacheText}</span>
                 </div>
             </footer>
         </div>

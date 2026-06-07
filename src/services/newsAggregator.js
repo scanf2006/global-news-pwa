@@ -1,71 +1,154 @@
-// 新闻聚合器 - 整合所有新闻源
-import * as Sentry from "@sentry/nextjs";
 import { RSSAdapter } from './rssAdapter';
 import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
-import { BilibiliAdapter } from './bilibiliAdapter';
 import { YouTubeAdapter } from './youtubeAdapter';
+import { calculateTokenSimilarity, isLikelyUsefulTitle, normalizeTitle } from './serviceUtils';
 
+const TRANSLATION_TARGET_LIMIT = 60;
+const translationCache = new Map();
+const SIMILARITY_THRESHOLD = 0.72;
+const MERGE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function getItemDedupKey(item) {
+    const normalizedTitle = normalizeTitle(item.titleOriginal || item.titleTranslated);
+    const url = item.url || '';
+    return `${item.source}|${normalizedTitle}|${url}`;
+}
+
+function dedupeNewsItems(items) {
+    const seen = new Set();
+    const dedupedItems = [];
+
+    for (const item of items) {
+        if (!item?.url || !isLikelyUsefulTitle(item.titleOriginal || item.titleTranslated)) {
+            continue;
+        }
+
+        const key = getItemDedupKey(item);
+        if (seen.has(key)) {
+            continue;
+        }
+
+        seen.add(key);
+        dedupedItems.push(item);
+    }
+
+    return dedupedItems;
+}
+
+function mergeSimilarNewsItems(items) {
+    const mergedItems = [];
+
+    for (const item of items) {
+        const matchingItem = mergedItems.find((existingItem) => {
+            const timeDistance = Math.abs(new Date(existingItem.timestamp) - new Date(item.timestamp));
+            if (timeDistance > MERGE_WINDOW_MS) {
+                return false;
+            }
+
+            const exactMatch = normalizeTitle(existingItem.titleOriginal) === normalizeTitle(item.titleOriginal);
+            if (exactMatch) {
+                return true;
+            }
+
+            return calculateTokenSimilarity(existingItem.titleOriginal, item.titleOriginal) >= SIMILARITY_THRESHOLD;
+        });
+
+        if (!matchingItem) {
+            mergedItems.push({
+                ...item,
+                sourceList: [item.source],
+            });
+            continue;
+        }
+
+        matchingItem.sourceList = Array.from(new Set([...(matchingItem.sourceList || [matchingItem.source]), item.source]));
+
+        if (new Date(item.timestamp) > new Date(matchingItem.timestamp)) {
+            matchingItem.timestamp = item.timestamp;
+        }
+
+        if (!matchingItem.views && item.views) {
+            matchingItem.views = item.views;
+        }
+    }
+
+    return mergedItems.map((item) => ({
+        ...item,
+        source: item.sourceList.length > 1 ? `${item.sourceList[0]} 等${item.sourceList.length}源` : item.source,
+    }));
+}
+
+async function translateBatch(items) {
+    const { translate } = await import('google-translate-api-x');
+    const translateQueue = [];
+
+    for (const item of items) {
+        if (!item.titleOriginal) {
+            continue;
+        }
+
+        if (item.source === '微博热搜' || item.source === 'Xiaohongshu') {
+            item.titleTranslated = item.titleOriginal;
+            continue;
+        }
+
+        if (translationCache.has(item.titleOriginal)) {
+            item.titleTranslated = translationCache.get(item.titleOriginal);
+            continue;
+        }
+
+        translateQueue.push(item);
+    }
+
+    for (let index = 0; index < translateQueue.length; index += 6) {
+        const chunk = translateQueue.slice(index, index + 6);
+        await Promise.allSettled(
+            chunk.map(async (item) => {
+                try {
+                    const result = await translate(item.titleOriginal, { to: 'zh-CN' });
+                    translationCache.set(item.titleOriginal, result.text);
+                    item.titleTranslated = result.text;
+                } catch (error) {
+                    console.error('Translation failed for item:', item.id, error.message);
+                    item.titleTranslated = item.titleOriginal;
+                }
+            })
+        );
+    }
+}
 
 export const NewsAggregator = {
     async fetchAllNews() {
         try {
-            const [rssNews, redditNews, twitterNews, weiboNews, youtubeNews] = await Promise.allSettled([
+            const settledResults = await Promise.allSettled([
                 RSSAdapter.fetchAll(),
                 RedditAdapter.fetchTrending(),
                 TwitterAdapter.fetchTrending(),
                 WeiboAdapter.fetchHotSearch(),
-                YouTubeAdapter.fetchTrending()
+                YouTubeAdapter.fetchTrending(),
             ]);
 
-            let allNews = [];
+            const allNews = settledResults
+                .filter((result) => result.status === 'fulfilled')
+                .flatMap((result) => result.value);
 
-            if (rssNews.status === 'fulfilled') allNews = allNews.concat(rssNews.value);
-            if (redditNews.status === 'fulfilled') allNews = allNews.concat(redditNews.value);
-            if (twitterNews.status === 'fulfilled') allNews = allNews.concat(twitterNews.value);
-            if (weiboNews.status === 'fulfilled') {
-                allNews = allNews.concat(weiboNews.value);
-            }
-            if (youtubeNews.status === 'fulfilled') allNews = allNews.concat(youtubeNews.value);
+            const dedupedNews = mergeSimilarNewsItems(
+                dedupeNewsItems(allNews)
+            )
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-            // Translation Step
             try {
-                const { translate } = require('google-translate-api-x');
-
-                // 翻译所有新闻,不限制数量
-                await Promise.allSettled(allNews.map(async (item) => {
-                    if (!item.titleOriginal) return;
-                    // 微博内容已是中文,跳过翻译
-                    if (item.source === '微博热搜') {
-                        item.titleTranslated = item.titleOriginal;
-                        return;
-                    }
-                    try {
-                        const res = await translate(item.titleOriginal, { to: 'zh-CN' });
-                        item.titleTranslated = res.text;
-                    } catch (e) {
-                        // keep original if translation fails
-                        console.error('Translation failed for item:', item.id, e.message);
-                        item.titleTranslated = item.titleOriginal; // 翻译失败时使用原文
-                    }
-                }));
-
-                // 不要替换allNews,保留所有新闻数据
-                // allNews = newsToTranslate; // 这行代码会丢弃未翻译的新闻!
-            } catch (e) {
-                console.error('Translation service error:', e);
+                await translateBatch(dedupedNews.slice(0, TRANSLATION_TARGET_LIMIT));
+            } catch (error) {
+                console.error('Translation service error:', error);
             }
 
-            // Sort by timestamp if available, otherwise randomize or keeping source order
-            // Ideally mix them up a bit so it's not just blocks of same source
-
-            allNews.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-            return allNews;
+            return dedupedNews;
         } catch (error) {
             console.error('NewsAggregator Error:', error);
             return [];
         }
-    }
+    },
 };

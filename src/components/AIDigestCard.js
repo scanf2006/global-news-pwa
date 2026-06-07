@@ -1,106 +1,100 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 import styles from './AIDigestCard.module.css';
 
-export default function AIDigestCard() {
-    const [digest, setDigest] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [errorMsg, setErrorMsg] = useState(null);
-    const [isExpanded, setIsExpanded] = useState(false);
+function buildOverview(newsItems) {
+    const total = newsItems.length;
+    const sourceCounts = new Map();
+    const multiSourceItems = [];
 
-    useEffect(() => {
-        const fetchDigest = async () => {
-            try {
-                // Get keys from local storage
-                const localApiKey = localStorage.getItem('user_openai_api_key') || '';
-                const localBaseUrl = localStorage.getItem('user_openai_base_url') || '';
-                const localModel = localStorage.getItem('user_openai_model') || '';
+    for (const item of newsItems) {
+        const sources = item.sourceList?.length ? item.sourceList : [item.source];
+        sources.forEach((source) => {
+            sourceCounts.set(source, (sourceCounts.get(source) || 0) + 1);
+        });
 
-                const headers = {};
-                if (localApiKey) headers['x-user-openai-key'] = localApiKey;
-                if (localBaseUrl) headers['x-user-openai-base'] = localBaseUrl;
-                if (localModel) headers['x-user-openai-model'] = localModel;
-
-                // Disable default caching mechanism if user configured custom settings to force real-time testing
-                if (localApiKey) headers['cache-control'] = 'no-cache';
-
-                const res = await fetch('/api/digest', { headers });
-                const data = await res.json();
-                if (data.success && data.data) {
-                    setDigest(data.data);
-                    setErrorMsg(null);
-                } else {
-                    setErrorMsg(data.error || '获取摘要失败，请检查您的 API Key 或网络设置。');
-                }
-            } catch (error) {
-                console.error('Failed to fetch AI digest:', error);
-                setErrorMsg('请求异常，无法连接到大模型服务器。');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDigest();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className={`${styles.card} ${styles.skeletonCard}`}>
-                <div className={styles.skeletonTitle}></div>
-                <div className={styles.skeletonLine}></div>
-                <div className={styles.skeletonLine}></div>
-                <div className={styles.skeletonLine} style={{ width: '80%' }}></div>
-            </div>
-        );
+        if ((item.sourceList?.length || 1) > 1) {
+            multiSourceItems.push(item);
+        }
     }
 
-    if (errorMsg) {
-        return (
-            <div className={`${styles.card} ${styles.mockVariant}`}>
-                <div className={styles.header}>
-                    <h2 className={styles.title} style={{ color: '#ef4444' }}>
-                        <span className={styles.icon}>⚠️</span> 生成简报失败
-                    </h2>
-                </div>
-                <div className={styles.content}>
-                    <p style={{ color: '#ef4444', fontSize: '0.9rem', margin: 0 }}>
-                        {errorMsg}
-                    </p>
-                    <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                        请点击右上角 <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px' }}>⚙️</span> 检查您的 API 模型与密钥是否正确填写，或者余额是否充足。
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    const topSources = [...sourceCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
 
-    if (!digest) return null;
+    const latestItems = newsItems
+        .slice()
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 3);
 
-    const formattedTime = new Date(digest.timestamp).toLocaleString('zh-CN', {
-        hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric'
-    });
+    const focusItems = multiSourceItems
+        .slice()
+        .sort((a, b) => (b.sourceList?.length || 1) - (a.sourceList?.length || 1))
+        .slice(0, 3);
+
+    return {
+        total,
+        topSources,
+        latestItems,
+        focusItems,
+    };
+}
+
+export default function AIDigestCard({ newsItems = [] }) {
+    const overview = buildOverview(newsItems);
 
     return (
-        <div className={`${styles.card} ${digest.isMock ? styles.mockVariant : ''}`}>
+        <section className={styles.card}>
             <div className={styles.header}>
-                <h2 className={styles.title}>
-                    <span className={styles.icon}>✨</span> AI 全球速报
-                </h2>
-                <span className={styles.time}>{formattedTime}更新</span>
+                <div className={styles.headerText}>
+                    <span className={styles.eyebrow}>Overview</span>
+                    <h2 className={styles.title}>本地热点概览</h2>
+                </div>
+                <span className={styles.time}>{overview.total} 条候选</span>
             </div>
 
-            <div className={`${styles.content} ${!isExpanded ? styles.collapsed : ''}`}>
-                <ReactMarkdown>{digest.content}</ReactMarkdown>
-            </div>
+            <div className={styles.content}>
+                <section className={styles.primarySection}>
+                    <h3 className={styles.sectionTitle}>当前盘面</h3>
+                    <p className={styles.paragraph}>
+                        当前列表已按时间与相似度整理，优先保留跨平台同时升温的话题，尽量减少重复刷屏。
+                    </p>
+                </section>
 
-            <button
-                className={styles.expandButton}
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                {isExpanded ? '收起简报 ⌃' : '展开全文 ⌄'}
-            </button>
-        </div>
+                <div className={styles.columns}>
+                    <section className={styles.section}>
+                        <h3 className={styles.sectionTitle}>来源分布</h3>
+                        <div className={styles.badgeRow}>
+                            {overview.topSources.map(([source, count]) => (
+                                <span key={source} className={styles.badge}>
+                                    <span className={styles.badgeName}>{source}</span>
+                                    <span className={styles.badgeCount}>{count}</span>
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+
+                    {overview.focusItems.length > 0 && (
+                        <section className={styles.section}>
+                            <h3 className={styles.sectionTitle}>跨源共振</h3>
+                            <ul className={styles.list}>
+                                {overview.focusItems.map((item) => (
+                                    <li key={item.id}>{item.titleTranslated || item.titleOriginal}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+
+                    <section className={styles.section}>
+                        <h3 className={styles.sectionTitle}>最新进入列表</h3>
+                        <ul className={styles.list}>
+                            {overview.latestItems.map((item) => (
+                                <li key={item.id}>{item.titleTranslated || item.titleOriginal}</li>
+                            ))}
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </section>
     );
 }

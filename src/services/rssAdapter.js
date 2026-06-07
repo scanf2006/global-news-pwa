@@ -1,6 +1,14 @@
 import Parser from 'rss-parser';
+import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
 
-const parser = new Parser();
+const parser = new Parser({
+    customFetch: (url) => fetchWithTimeout(url, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+        },
+    }, 8000),
+});
 
 const RSS_FEEDS = {
     'BBC News': 'http://feeds.bbci.co.uk/news/world/rss.xml',
@@ -12,7 +20,7 @@ const RSS_FEEDS = {
     'CBC Toronto': 'https://www.cbc.ca/cmlink/rss-canada-toronto',
     'Global News': 'https://globalnews.ca/toronto/feed/',
     'Toronto Star': 'https://www.thestar.com/search/?f=rss&t=article&s=start_time&sd=desc&l=10',
-    'CP24': 'http://mybreakingnews.cp24.com/feed.xml'
+    'CP24': 'http://mybreakingnews.cp24.com/feed.xml',
 };
 
 export const RSSAdapter = {
@@ -25,17 +33,19 @@ export const RSSAdapter = {
 
         try {
             const feed = await parser.parseURL(feedUrl);
-            // Take top 20 from each feed to ensure backup pool
-            return feed.items.slice(0, 20).map((item, index) => ({
-                id: `rss-${sourceName}-${index}-${Date.now()}`,
-                source: sourceName,
-                titleOriginal: item.title,
-                titleTranslated: null,
-                url: item.link,
-                timestamp: item.pubDate || item.isoDate || new Date().toISOString(),
-                views: null,
-                thumbnail: null // RSS usually doesn't have good thumbnails in standard fields, handling separately if possible
-            }));
+            return feed.items
+                .filter((item) => item.link && isLikelyUsefulTitle(item.title))
+                .slice(0, 20)
+                .map((item, index) => ({
+                    id: `rss-${sourceName}-${index}-${Date.now()}`,
+                    source: sourceName,
+                    titleOriginal: item.title,
+                    titleTranslated: null,
+                    url: item.link,
+                    timestamp: item.pubDate || item.isoDate || new Date().toISOString(),
+                    views: null,
+                    thumbnail: null,
+                }));
         } catch (error) {
             console.error(`RSSAdapter Error (${sourceName}):`, error);
             return [];
@@ -43,8 +53,7 @@ export const RSSAdapter = {
     },
 
     async fetchAll() {
-        const promises = Object.keys(RSS_FEEDS).map(source => this.fetchTrending(source));
-        const results = await Promise.all(promises);
+        const results = await Promise.all(Object.keys(RSS_FEEDS).map((source) => this.fetchTrending(source)));
         return results.flat();
-    }
+    },
 };

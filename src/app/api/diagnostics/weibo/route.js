@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic'; // 禁用缓存
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-    const results = [];
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+            { error: 'Diagnostics endpoint is disabled in production' },
+            { status: 403 }
+        );
+    }
 
+    const results = [];
     const sources = [
         {
             name: 'github-raw-master',
@@ -21,7 +27,7 @@ export async function GET() {
         {
             name: 'vvhan',
             url: 'https://api.vvhan.com/api/hotlist/weiboHot',
-        }
+        },
     ];
 
     for (const source of sources) {
@@ -32,23 +38,21 @@ export async function GET() {
 
             const response = await fetch(source.url, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 },
-                signal: controller.signal
+                signal: controller.signal,
             });
             clearTimeout(timeoutId);
 
-            const duration = Date.now() - start;
-
-            let data = null;
+            let dataSummary = null;
             let error = null;
 
             if (response.ok) {
                 try {
                     const json = await response.json();
-                    data = Array.isArray(json) ? `Array(${json.length})` : 'Object';
-                } catch (e) {
-                    error = 'JSON Parse Error: ' + e.message;
+                    dataSummary = Array.isArray(json) ? `Array(${json.length})` : 'Object';
+                } catch (parseError) {
+                    error = `JSON Parse Error: ${parseError.message}`;
                 }
             } else {
                 error = `HTTP Error: ${response.status} ${response.statusText}`;
@@ -58,18 +62,17 @@ export async function GET() {
                 source: source.name,
                 url: source.url,
                 status: response.ok ? 'OK' : 'Failed',
-                duration: `${duration}ms`,
-                dataSummary: data,
-                error: error
+                duration: `${Date.now() - start}ms`,
+                dataSummary,
+                error,
             });
-
-        } catch (e) {
+        } catch (error) {
             results.push({
                 source: source.name,
                 url: source.url,
                 status: 'Error',
                 duration: `${Date.now() - start}ms`,
-                error: e.message
+                error: error.message,
             });
         }
     }
@@ -77,6 +80,6 @@ export async function GET() {
     return NextResponse.json({
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        results
+        results,
     });
 }

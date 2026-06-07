@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main style={{ paddingTop: '8.5rem', paddingBottom: '2rem' }}>
+      <main style={{ paddingTop: '6.65rem', paddingBottom: '2rem' }}>
         <NewsFeed />
       </main>
     </>

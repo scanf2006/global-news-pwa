@@ -1,127 +1,167 @@
-/* 卡片包装器 - 用于滑动删除 */
 .cardWrapper {
     position: relative;
     width: 100%;
     overflow: hidden;
 }
 
-/* 删除指示器 */
 .deleteIndicator {
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 100px;
+    inset: 0 0 0 auto;
+    width: 104px;
     background: linear-gradient(90deg, transparent, #ef4444);
     display: flex;
     align-items: center;
     justify-content: flex-end;
     padding-right: 1rem;
     color: white;
-    font-weight: 600;
-    font-size: 0.875rem;
+    font-weight: 700;
+    font-size: 0.84rem;
     z-index: 0;
 }
 
-/* Liquid Glass 液态玻璃卡片 */
 .card {
     display: block;
     position: relative;
     width: 100%;
-    max-width: 100%;
-    min-height: 200px;
-
-    /* 核心玻璃效果 - 增强模糊和饱和度 */
-    backdrop-filter: blur(25px) saturate(200%);
-    -webkit-backdrop-filter: blur(25px) saturate(200%);
-    background: rgba(255, 255, 255, 0.35);
-
-    /* 边框 */
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 20px;
-
-    /* 边缘高光 + 浮动阴影 */
+    min-height: 154px;
+    backdrop-filter: blur(22px) saturate(185%);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    background: rgba(255, 255, 255, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.44);
+    border-radius: 22px;
     box-shadow:
-        /* 内部边缘高光 */
-        inset 0 1px 0 rgba(255, 255, 255, 0.8),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.3),
-        /* 外部浮动阴影 - 蓝色调 */
-        0 8px 32px rgba(31, 38, 135, 0.2),
-        0 16px 64px rgba(31, 38, 135, 0.15);
-
-    padding: 1.5rem;
+        inset 0 1px 0 rgba(255, 255, 255, 0.82),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.24),
+        0 10px 28px rgba(31, 38, 135, 0.12);
+    padding: 1rem 1rem 0.95rem;
     text-decoration: none;
     color: inherit;
     box-sizing: border-box;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 }
 
-.card:hover {
-    transform: translateY(-8px);
-    background: rgba(255, 255, 255, 0.45);
-    border-color: rgba(255, 255, 255, 0.6);
+.card:hover,
+.card:focus-visible {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.44);
+    border-color: rgba(255, 255, 255, 0.62);
     box-shadow:
-        /* 增强内部高光 */
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.4),
-        /* 增强浮动阴影 */
-        0 12px 48px rgba(31, 38, 135, 0.25),
-        0 24px 96px rgba(31, 38, 135, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.92),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.32),
+        0 14px 34px rgba(31, 38, 135, 0.16);
+    outline: none;
 }
 
-/* 底部光泽条 - 液态渐变 */
 .card::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 50px;
-    background: linear-gradient(to top,
-            rgba(255, 255, 255, 0.15),
-            transparent);
-    border-radius: 0 0 20px 20px;
+    inset: 0;
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.36), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 48%);
     pointer-events: none;
 }
 
-/* 内容区域 */
 .content {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
+    gap: 0.7rem;
+    height: 100%;
+}
+
+.metaTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 0.75rem;
 }
 
+.sourceRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+}
+
+.sourceChip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.52rem;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.1);
+    color: #1e40af;
+    font-size: 0.72rem;
+    font-weight: 700;
+    max-width: 10.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mergeBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.52rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+    color: #334155;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.metaRight {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.time {
+    color: #64748b;
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+
+.views {
+    color: #475569;
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+
 .title {
-    font-size: 1.375rem;
-    font-weight: 600;
-    color: #1e293b;
-    line-height: 1.4;
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.1rem;
+    font-weight: 760;
+    line-height: 1.42;
+    letter-spacing: -0.02em;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin: 0;
 }
 
-.meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-    color: #64748b;
-    margin-top: auto;
-    padding-top: 0.5rem;
-}
+@media (max-width: 640px) {
+    .card {
+        min-height: 144px;
+        padding: 0.95rem 0.9rem 0.9rem;
+        border-radius: 20px;
+    }
 
-.source {
-    font-weight: 500;
-    color: #3b82f6;
-}
+    .metaTop {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 
-.views {
-    color: #64748b;
+    .metaRight {
+        justify-content: flex-start;
+    }
+
+    .title {
+        font-size: 1.02rem;
+    }
 }

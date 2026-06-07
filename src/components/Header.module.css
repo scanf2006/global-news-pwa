@@ -4,240 +4,97 @@
     left: 0;
     right: 0;
     z-index: 1000;
-    padding: 1.5rem;
+    padding: 0.85rem 1rem;
     display: flex;
     justify-content: center;
     pointer-events: none;
 }
 
-/* Liquid Glass Header */
 .headerGlass {
     position: relative;
-    max-width: 600px;
+    max-width: 1180px;
     width: 100%;
-
-    /* 核心玻璃效果 */
-    backdrop-filter: blur(25px) saturate(200%);
-    -webkit-backdrop-filter: blur(25px) saturate(200%);
-    background: rgba(255, 255, 255, 0.35);
-
-    /* 边框 */
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 20px;
-
-    /* 边缘高光 + 浮动阴影 */
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(255, 255, 255, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 22px;
     box-shadow:
-        /* 内部边缘高光 */
-        inset 0 1px 0 rgba(255, 255, 255, 0.8),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.3),
-        /* 外部浮动阴影 */
-        0 8px 32px rgba(31, 38, 135, 0.2),
-        0 16px 64px rgba(31, 38, 135, 0.15);
-
-    padding: 1.25rem 1.5rem;
-    text-align: center;
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.24),
+        0 10px 30px rgba(31, 38, 135, 0.12);
+    padding: 0.85rem 1.1rem 0.8rem;
     pointer-events: auto;
     box-sizing: border-box;
 }
 
-/* 底部光泽条 */
 .headerGlass::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 40px;
-    background: linear-gradient(to top,
-            rgba(255, 255, 255, 0.15),
-            transparent);
-    border-radius: 0 0 20px 20px;
+    inset: 0;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.35), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 62%);
+    pointer-events: none;
 }
 
 .topRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.kicker {
+    color: #2563eb;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
 }
 
 .title {
-    font-size: 1.5rem;
     margin: 0;
-    color: #1e40af;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    /* Center text artificially relative to the flex container */
-    flex-grow: 1;
-    text-align: center;
-    padding-left: 32px;
-    /* balance out the settings btn width */
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
 }
 
 .subtitle {
-    color: #64748b;
-    font-size: 0.75rem;
-    margin: 0.25rem 0 0;
-    font-weight: 500;
     position: relative;
     z-index: 1;
+    color: #475569;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 0.28rem 0 0;
+    max-width: 56rem;
 }
 
-.settingsBtn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
-.settingsBtn:hover {
-    background: rgba(255, 255, 255, 0.5);
-    transform: scale(1.05);
-}
-
-/* Modal Styles */
-.modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 2000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-}
-
-.modalContent {
-    background: #0f172a;
-    width: 90%;
-    max-width: 400px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.95);
+@media (max-width: 640px) {
+    .headerContainer {
+        padding: 0.75rem 0.85rem;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+    .headerGlass {
+        padding: 0.8rem 0.95rem 0.72rem;
     }
-}
 
-.modalHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(255, 255, 255, 0.02);
-}
+    .topRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.18rem;
+    }
 
-.modalHeader h3 {
-    margin: 0;
-    color: #f8fafc;
-    font-size: 1.1rem;
-}
+    .title {
+        font-size: 1.16rem;
+    }
 
-.closeBtn {
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 1.5rem;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-}
-
-.closeBtn:hover {
-    color: #f8fafc;
-}
-
-.modalBody {
-    padding: 1.5rem;
-}
-
-.inputGroup {
-    margin-bottom: 1.25rem;
-    text-align: left;
-}
-
-.inputGroup:last-child {
-    margin-bottom: 0;
-}
-
-.inputGroup label {
-    display: block;
-    color: #cbd5e1;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.inputGroup input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    color: #f8fafc;
-    font-size: 0.9rem;
-    box-sizing: border-box;
-    transition: all 0.2s;
-}
-
-.inputGroup input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background: rgba(59, 130, 246, 0.05);
-}
-
-.inputGroup small {
-    display: block;
-    color: #64748b;
-    font-size: 0.75rem;
-    margin-top: 0.35rem;
-    line-height: 1.4;
-}
-
-.modalFooter {
-    padding: 1.25rem 1.5rem;
-    background: rgba(255, 255, 255, 0.02);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.saveBtn {
-    width: 100%;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.saveBtn:hover {
-    background: #2563eb;
+    .subtitle {
+        font-size: 0.76rem;
+    }
 }

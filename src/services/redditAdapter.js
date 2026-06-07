@@ -1,25 +1,38 @@
+import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
+
 export const RedditAdapter = {
     async fetchTrending() {
         try {
-            const response = await fetch('https://www.reddit.com/r/popular.json?limit=20');
+            const response = await fetchWithTimeout('https://www.reddit.com/r/popular.json?limit=20', {
+                headers: {
+                    'User-Agent': 'global-news-pwa/1.0',
+                    Accept: 'application/json',
+                },
+                next: { revalidate: 300 },
+            }, 8000);
+
+            if (!response.ok) {
+                throw new Error(`Reddit returned ${response.status}`);
+            }
+
             const data = await response.json();
 
-            return data.data.children.map(child => {
-                const item = child.data;
-                return {
+            return data.data.children
+                .map((child) => child.data)
+                .filter((item) => item?.permalink && isLikelyUsefulTitle(item.title))
+                .map((item) => ({
                     id: `reddit-${item.id}`,
                     source: 'Reddit',
                     titleOriginal: item.title,
-                    titleTranslated: null, // Will be translated later
+                    titleTranslated: null,
                     url: `https://www.reddit.com${item.permalink}`,
                     timestamp: new Date(item.created_utc * 1000).toISOString(),
-                    views: item.score, // Use score as proxy for views/popularity
-                    thumbnail: null // User requested titles only, no thumbnails
-                };
-            });
+                    views: item.score,
+                    thumbnail: null,
+                }));
         } catch (error) {
             console.error('RedditAdapter Error:', error);
             return [];
         }
-    }
+    },
 };

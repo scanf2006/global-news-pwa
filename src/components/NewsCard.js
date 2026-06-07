@@ -1,74 +1,85 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { formatRelativeTime } from '@/services/serviceUtils';
 import styles from './NewsCard.module.css';
+
+function getSourceChips(item) {
+    if (item?.sourceList?.length) {
+        return item.sourceList.slice(0, 3);
+    }
+
+    return item?.source ? [item.source] : ['未知来源'];
+}
 
 export default function NewsCard({ item, onDelete }) {
     const [translateX, setTranslateX] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
-    const currentX = useRef(0);
-    const isDragging = useRef(false);
 
-    const DELETE_THRESHOLD = -100; // 向左滑动100px触发删除
+    const DELETE_THRESHOLD = -100;
 
-    const handleTouchStart = (e) => {
-        startX.current = e.touches[0].clientX;
-        isDragging.current = true;
+    const handleTouchStart = (event) => {
+        startX.current = event.touches[0].clientX;
+        setIsDragging(true);
     };
 
-    const handleTouchMove = (e) => {
-        if (!isDragging.current) return;
+    const handleTouchMove = (event) => {
+        if (!isDragging) {
+            return;
+        }
 
-        currentX.current = e.touches[0].clientX;
-        const diff = currentX.current - startX.current;
+        const currentX = event.touches[0].clientX;
+        const diff = currentX - startX.current;
 
-        // 只允许向左滑动
         if (diff < 0) {
             setTranslateX(diff);
         }
     };
 
     const handleTouchEnd = () => {
-        if (!isDragging.current) return;
-        isDragging.current = false;
+        if (!isDragging) {
+            return;
+        }
 
-        // 判断是否触发删除
+        setIsDragging(false);
+
         if (translateX < DELETE_THRESHOLD) {
-            // 触发删除
             setIsDeleting(true);
-            setTranslateX(-500); // 滑出屏幕
+            setTranslateX(-500);
 
-            // 300ms后调用删除回调
             setTimeout(() => {
                 onDelete(item.id);
             }, 300);
-        } else {
-            // 回弹
-            setTranslateX(0);
+            return;
         }
+
+        setTranslateX(0);
     };
 
     const cardStyle = {
         transform: `translateX(${translateX}px)`,
-        transition: isDragging.current ? 'none' : 'transform 0.3s ease-out',
-        opacity: isDeleting ? 0 : 1
+        transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+        opacity: isDeleting ? 0 : 1,
     };
 
     const deleteIndicatorStyle = {
         opacity: translateX < DELETE_THRESHOLD / 2 ? 1 : 0,
-        transition: 'opacity 0.2s'
+        transition: 'opacity 0.2s',
     };
+
+    const relativeTime = formatRelativeTime(item?.timestamp);
+    const sourceChips = getSourceChips(item);
+    const hasMergedSources = (item?.sourceList?.length || 0) > 1;
 
     return (
         <div className={styles.cardWrapper}>
-            {/* 删除指示器背景 */}
             <div className={styles.deleteIndicator} style={deleteIndicatorStyle}>
-                <span>🗑️ 删除</span>
+                <span>删除</span>
             </div>
 
-            {/* 卡片 */}
             <Link
                 href={item?.url || '#'}
                 target="_blank"
@@ -80,18 +91,24 @@ export default function NewsCard({ item, onDelete }) {
                 onTouchEnd={handleTouchEnd}
             >
                 <div className={styles.content}>
-                    {/* 标题 */}
+                    <div className={styles.metaTop}>
+                        <div className={styles.sourceRow}>
+                            {sourceChips.map((source) => (
+                                <span key={source} className={styles.sourceChip}>{source}</span>
+                            ))}
+                            {hasMergedSources && (
+                                <span className={styles.mergeBadge}>多源共振</span>
+                            )}
+                        </div>
+                        <div className={styles.metaRight}>
+                            {relativeTime && <span className={styles.time}>{relativeTime}</span>}
+                            {item?.views && <span className={styles.views}>{item.views}</span>}
+                        </div>
+                    </div>
+
                     <h3 className={styles.title}>
                         {item?.titleTranslated || item?.titleOriginal || '无标题'}
                     </h3>
-
-                    {/* 元信息 */}
-                    <div className={styles.meta}>
-                        <span className={styles.source}>{item?.source || '未知来源'}</span>
-                        {item?.views && (
-                            <span className={styles.views}>👁 {item.views}</span>
-                        )}
-                    </div>
                 </div>
             </Link>
         </div>
