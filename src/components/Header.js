@@ -8,7 +8,7 @@ export default function Header() {
             <div className={styles.headerGlass}>
                 <div className={styles.topRow}>
                     <span className={styles.kicker}>Global Pulse</span>
-                    <h1 className={styles.title}>全球热点</h1>
+                    <h1 className={styles.title}>{'\u5168\u7403\u70ed\u70b9'}</h1>
                 </div>
             </div>
         </div>

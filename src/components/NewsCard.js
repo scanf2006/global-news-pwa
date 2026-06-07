@@ -10,7 +10,7 @@ function getSourceChips(item) {
         return item.sourceList.slice(0, 3);
     }
 
-    return item?.source ? [item.source] : ['未知来源'];
+    return item?.source ? [item.source] : ['\u672a\u77e5\u6765\u6e90'];
 }
 
 export default function NewsCard({ item, onDelete }) {
@@ -73,11 +73,13 @@ export default function NewsCard({ item, onDelete }) {
     const relativeTime = formatRelativeTime(item?.timestamp);
     const sourceChips = getSourceChips(item);
     const hasMergedSources = (item?.sourceList?.length || 0) > 1;
+    const translatedTitle =
+        item?.titleTranslated || item?.titleOriginal || '\u65e0\u6807\u9898';
 
     return (
         <div className={styles.cardWrapper}>
             <div className={styles.deleteIndicator} style={deleteIndicatorStyle}>
-                <span>删除</span>
+                <span>{'\u5220\u9664'}</span>
             </div>
 
             <Link
@@ -98,17 +100,19 @@ export default function NewsCard({ item, onDelete }) {
                                     {source}
                                 </span>
                             ))}
-                            {hasMergedSources && <span className={styles.mergeBadge}>多源共振</span>}
+                            {hasMergedSources && (
+                                <span className={styles.mergeBadge}>
+                                    {'\u591a\u6e90\u5171\u632f'}
+                                </span>
+                            )}
                         </div>
-                        <div className={styles.metaRight}>
-                            {relativeTime && <span className={styles.time}>{relativeTime}</span>}
-                            {item?.views && <span className={styles.views}>{item.views}</span>}
-                        </div>
+                        {item?.views && <span className={styles.views}>{item.views}</span>}
                     </div>
 
-                    <h3 className={styles.title}>
-                        {item?.titleTranslated || item?.titleOriginal || '无标题'}
-                    </h3>
+                    <div className={styles.titleBlock}>
+                        <h3 className={styles.title}>{translatedTitle}</h3>
+                        {relativeTime && <span className={styles.titleTime}>{relativeTime}</span>}
+                    </div>
                 </div>
             </Link>
         </div>
