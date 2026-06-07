@@ -22,6 +22,10 @@ export function normalizeTitle(title) {
         .trim();
 }
 
+export function containsCjk(text) {
+    return /[\u3400-\u9fff]/.test(String(text || ''));
+}
+
 export function tokenizeTitle(title) {
     return normalizeTitle(title)
         .split(' ')

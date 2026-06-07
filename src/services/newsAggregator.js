@@ -3,12 +3,17 @@ import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
 import { YouTubeAdapter } from './youtubeAdapter';
-import { calculateTokenSimilarity, isLikelyUsefulTitle, normalizeTitle } from './serviceUtils';
+import {
+    calculateTokenSimilarity,
+    containsCjk,
+    isLikelyUsefulTitle,
+    normalizeTitle,
+} from './serviceUtils';
 
-const TRANSLATION_TARGET_LIMIT = 60;
 const translationCache = new Map();
 const SIMILARITY_THRESHOLD = 0.72;
 const MERGE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MERGED_SOURCE_LABEL = '多源热点';
 
 function getItemDedupKey(item) {
     const normalizedTitle = normalizeTitle(item.titleOriginal || item.titleTranslated);
@@ -63,7 +68,9 @@ function mergeSimilarNewsItems(items) {
             continue;
         }
 
-        matchingItem.sourceList = Array.from(new Set([...(matchingItem.sourceList || [matchingItem.source]), item.source]));
+        matchingItem.sourceList = Array.from(
+            new Set([...(matchingItem.sourceList || [matchingItem.source]), item.source])
+        );
 
         if (new Date(item.timestamp) > new Date(matchingItem.timestamp)) {
             matchingItem.timestamp = item.timestamp;
@@ -76,7 +83,7 @@ function mergeSimilarNewsItems(items) {
 
     return mergedItems.map((item) => ({
         ...item,
-        source: item.sourceList.length > 1 ? `${item.sourceList[0]} 等${item.sourceList.length}源` : item.source,
+        source: item.sourceList.length > 1 ? MERGED_SOURCE_LABEL : item.source,
     }));
 }
 
@@ -89,7 +96,7 @@ async function translateBatch(items) {
             continue;
         }
 
-        if (item.source === '微博热搜' || item.source === 'Xiaohongshu') {
+        if (containsCjk(item.titleOriginal) || item.source === '微博热搜' || item.source === 'Xiaohongshu') {
             item.titleTranslated = item.titleOriginal;
             continue;
         }
@@ -134,18 +141,17 @@ export const NewsAggregator = {
                 .filter((result) => result.status === 'fulfilled')
                 .flatMap((result) => result.value);
 
-            const dedupedNews = mergeSimilarNewsItems(
-                dedupeNewsItems(allNews)
-            )
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const mergedNews = mergeSimilarNewsItems(dedupeNewsItems(allNews)).sort(
+                (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+            );
 
             try {
-                await translateBatch(dedupedNews.slice(0, TRANSLATION_TARGET_LIMIT));
+                await translateBatch(mergedNews);
             } catch (error) {
                 console.error('Translation service error:', error);
             }
 
-            return dedupedNews;
+            return mergedNews;
         } catch (error) {
             console.error('NewsAggregator Error:', error);
             return [];

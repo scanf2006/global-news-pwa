@@ -94,11 +94,11 @@ export default function NewsCard({ item, onDelete }) {
                     <div className={styles.metaTop}>
                         <div className={styles.sourceRow}>
                             {sourceChips.map((source) => (
-                                <span key={source} className={styles.sourceChip}>{source}</span>
+                                <span key={source} className={styles.sourceChip}>
+                                    {source}
+                                </span>
                             ))}
-                            {hasMergedSources && (
-                                <span className={styles.mergeBadge}>多源共振</span>
-                            )}
+                            {hasMergedSources && <span className={styles.mergeBadge}>多源共振</span>}
                         </div>
                         <div className={styles.metaRight}>
                             {relativeTime && <span className={styles.time}>{relativeTime}</span>}

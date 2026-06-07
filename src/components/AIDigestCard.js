@@ -32,12 +32,7 @@ function buildOverview(newsItems) {
         .sort((a, b) => (b.sourceList?.length || 1) - (a.sourceList?.length || 1))
         .slice(0, 3);
 
-    return {
-        total,
-        topSources,
-        latestItems,
-        focusItems,
-    };
+    return { total, topSources, latestItems, focusItems };
 }
 
 export default function AIDigestCard({ newsItems = [] }) {

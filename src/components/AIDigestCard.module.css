@@ -147,8 +147,9 @@
 
 @media (max-width: 640px) {
     .card {
-        padding: 1rem;
-        border-radius: 20px;
+        margin-bottom: 0.9rem;
+        padding: 0.9rem;
+        border-radius: 18px;
     }
 
     .header {
@@ -158,5 +159,20 @@
 
     .time {
         align-self: flex-start;
+    }
+
+    .title {
+        font-size: 1.02rem;
+    }
+
+    .paragraph,
+    .list {
+        font-size: 0.86rem;
+    }
+
+    .primarySection,
+    .section {
+        padding: 0.75rem 0.8rem;
+        border-radius: 16px;
     }
 }

@@ -10,7 +10,9 @@ export default function Header() {
                     <span className={styles.kicker}>Global Pulse</span>
                     <h1 className={styles.title}>全球热点</h1>
                 </div>
-                <p className={styles.subtitle}>聚合全球主流媒体与平台热度，自动整理为更适合扫读的本地新闻流</p>
+                <p className={styles.subtitle}>
+                    聚合全球主流媒体与平台热度，自动整理成更适合手机和桌面扫读的本地新闻流
+                </p>
             </div>
         </div>
     );

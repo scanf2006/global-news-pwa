@@ -165,9 +165,7 @@ export default function NewsFeed() {
         pullStartY.current = null;
     };
 
-    const cacheText = cacheStatus?.fromCache
-        ? `缓存 ${formatRelativeAge(cacheStatus.age)}`
-        : '最新数据';
+    const cacheText = cacheStatus?.fromCache ? `缓存 ${formatRelativeAge(cacheStatus.age)}` : '最新数据';
 
     return (
         <div
@@ -176,9 +174,7 @@ export default function NewsFeed() {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            {isRefreshing && (
-                <div className={styles.refreshState}>正在刷新热点...</div>
-            )}
+            {isRefreshing && <div className={styles.refreshState}>正在刷新热点...</div>}
 
             <div className={styles.overviewWrap}>
                 <AIDigestCard newsItems={allNews} />
@@ -186,9 +182,7 @@ export default function NewsFeed() {
 
             <div className={styles.grid}>
                 {loading && displayedNews.length === 0 ? (
-                    [...Array(6)].map((_, index) => (
-                        <div key={index} className={styles.skeletonCard}></div>
-                    ))
+                    [...Array(6)].map((_, index) => <div key={index} className={styles.skeletonCard}></div>)
                 ) : (
                     displayedNews.map((item) => (
                         <NewsCard
@@ -199,11 +193,7 @@ export default function NewsFeed() {
                     ))
                 )}
 
-                {!loading && displayedNews.length === 0 && (
-                    <div className={styles.emptyState}>
-                        暂无数据
-                    </div>
-                )}
+                {!loading && displayedNews.length === 0 && <div className={styles.emptyState}>暂无数据</div>}
             </div>
 
             <footer className={styles.footer}>
