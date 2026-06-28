@@ -79,7 +79,9 @@ export default function NewsCard({ item, onDelete }) {
     return (
         <div className={styles.cardWrapper}>
             <div className={styles.deleteIndicator} style={deleteIndicatorStyle}>
-                <span>{'\u5220\u9664'}</span>
+                <div className={styles.deleteAction}>
+                    <span className={styles.deleteLabel}>{'\u5220\u9664'}</span>
+                </div>
             </div>
 
             <Link

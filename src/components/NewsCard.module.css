@@ -2,21 +2,68 @@
     position: relative;
     width: 100%;
     overflow: hidden;
+    border-radius: 26px;
 }
 
 .deleteIndicator {
     position: absolute;
-    inset: 0 0 0 auto;
-    width: 104px;
-    background: linear-gradient(90deg, transparent, #ef4444);
+    inset: 0;
+    display: flex;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-right: 1rem;
-    color: white;
-    font-weight: 700;
-    font-size: 0.84rem;
+    padding: 0.16rem;
     z-index: 0;
+    pointer-events: none;
+}
+
+.deleteAction {
+    position: relative;
+    width: 96px;
+    height: 100%;
+    min-height: 172px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 24px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(254, 226, 226, 0.4), rgba(239, 68, 68, 0.94) 34%, rgba(220, 38, 38, 0.98)),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent 44%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        inset 0 -1px 0 rgba(127, 29, 29, 0.18),
+        0 14px 26px rgba(239, 68, 68, 0.2);
+}
+
+.deleteAction::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.58), transparent 26%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 50%);
+    opacity: 0.95;
+}
+
+.deleteAction::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.16), transparent 30%, transparent 74%, rgba(255, 255, 255, 0.1));
+    mix-blend-mode: screen;
+}
+
+.deleteLabel {
+    position: relative;
+    z-index: 1;
+    color: #fff7f7;
+    font-weight: 800;
+    font-size: 0.88rem;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 1px rgba(127, 29, 29, 0.28);
 }
 
 .card {
@@ -197,6 +244,24 @@
 }
 
 @media (max-width: 640px) {
+    .cardWrapper {
+        border-radius: 24px;
+    }
+
+    .deleteIndicator {
+        padding: 0.14rem;
+    }
+
+    .deleteAction {
+        width: 88px;
+        min-height: 148px;
+        border-radius: 22px;
+    }
+
+    .deleteLabel {
+        font-size: 0.8rem;
+    }
+
     .card {
         min-height: 148px;
         padding: 1rem 0.88rem 0.96rem;
