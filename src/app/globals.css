@@ -45,12 +45,14 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.48), transparent 16%),
-    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.28), transparent 18%),
-    radial-gradient(circle at 56% 64%, rgba(255, 255, 255, 0.2), transparent 24%);
-  filter: blur(22px);
-  opacity: 0.95;
+    linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.28) 26%, transparent 38% 100%),
+    linear-gradient(72deg, transparent 0 52%, rgba(219, 234, 254, 0.32) 62%, transparent 76% 100%),
+    linear-gradient(160deg, transparent 0 36%, rgba(186, 230, 253, 0.24) 46%, transparent 64% 100%);
+  background-size: 140% 140%, 120% 120%, 160% 160%;
+  filter: blur(24px);
+  opacity: 0.86;
   z-index: 0;
+  animation: ambientGlassFlow 18s ease-in-out infinite alternate;
 }
 
 body::after {
@@ -64,6 +66,16 @@ body::after {
   mix-blend-mode: screen;
   opacity: 0.85;
   z-index: 0;
+}
+
+@keyframes ambientGlassFlow {
+  0% {
+    background-position: 0% 8%, 100% 0%, 18% 100%;
+  }
+
+  100% {
+    background-position: 100% 18%, 0% 16%, 82% 0%;
+  }
 }
 
 button,
@@ -131,5 +143,15 @@ h6 {
   .container {
     padding: 0.5rem;
     padding-bottom: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }

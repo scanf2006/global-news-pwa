@@ -9,7 +9,6 @@
     position: absolute;
     inset: 0;
     display: flex;
-    display: flex;
     align-items: center;
     justify-content: flex-end;
     padding: 0.16rem;
@@ -89,16 +88,17 @@
     color: inherit;
     box-sizing: border-box;
     transition:
-        transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-        background 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-        border-color 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+        transform 0.42s cubic-bezier(0.18, 0.88, 0.28, 1.12),
+        box-shadow 0.42s cubic-bezier(0.18, 0.88, 0.28, 1.12),
+        background 0.32s ease,
+        border-color 0.32s ease;
+    will-change: transform;
     overflow: hidden;
 }
 
 .card:hover,
 .card:focus-visible {
-    transform: translateY(-5px) scale(1.01);
+    transform: translateY(-5px) scale(1.012);
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.26)),
         linear-gradient(135deg, rgba(191, 219, 254, 0.24), rgba(219, 234, 254, 0.16) 58%, rgba(186, 230, 253, 0.2));
@@ -109,6 +109,11 @@
         0 24px 50px rgba(148, 163, 184, 0.22),
         0 8px 20px rgba(255, 255, 255, 0.38);
     outline: none;
+}
+
+.card:active {
+    transform: translateY(-1px) scale(0.994);
+    transition-duration: 0.16s;
 }
 
 .card::before {
@@ -135,6 +140,13 @@
         radial-gradient(circle at bottom right, rgba(147, 197, 253, 0.14), transparent 30%);
     mix-blend-mode: screen;
     pointer-events: none;
+    transform: translateX(-8%);
+    transition: transform 0.55s cubic-bezier(0.18, 0.88, 0.28, 1.12);
+}
+
+.card:hover::after,
+.card:focus-visible::after {
+    transform: translateX(8%);
 }
 
 .content {
@@ -268,6 +280,15 @@
         border-radius: 24px;
         backdrop-filter: blur(30px) saturate(205%);
         -webkit-backdrop-filter: blur(30px) saturate(205%);
+    }
+
+    .card:hover,
+    .card:focus-visible {
+        transform: none;
+    }
+
+    .card:active {
+        transform: scale(0.992);
     }
 
     .metaTop {
