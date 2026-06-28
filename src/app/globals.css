@@ -25,13 +25,45 @@
 }
 
 body {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #e0f2fe 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.92), transparent 18%),
+    radial-gradient(circle at 84% 12%, rgba(191, 219, 254, 0.72), transparent 24%),
+    radial-gradient(circle at 50% 78%, rgba(186, 230, 253, 0.58), transparent 28%),
+    linear-gradient(180deg, #eef6ff 0%, #dbeafe 44%, #cfe9ff 100%);
   background-attachment: fixed;
   color: #1e293b;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background-color 0.5s;
+  transition: background 0.5s ease;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.48), transparent 16%),
+    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.28), transparent 18%),
+    radial-gradient(circle at 56% 64%, rgba(255, 255, 255, 0.2), transparent 24%);
+  filter: blur(22px);
+  opacity: 0.95;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.18), transparent 32%, transparent 70%, rgba(255, 255, 255, 0.12)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+  z-index: 0;
 }
 
 button,
@@ -89,6 +121,13 @@ h6 {
 }
 
 @media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.88), transparent 22%),
+      radial-gradient(circle at 82% 14%, rgba(191, 219, 254, 0.62), transparent 26%),
+      linear-gradient(180deg, #f5f9ff 0%, #deeeff 48%, #d2e8ff 100%);
+  }
+
   .container {
     padding: 0.5rem;
     padding-bottom: 5rem;
