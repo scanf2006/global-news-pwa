@@ -11,6 +11,7 @@ const DISPLAY_COUNT_PER_SOURCE = 5;
 const RESERVE_COUNT_PER_SOURCE = 10;
 const NEWS_CACHE_KEY = `news_v2_${packageJson.version}`;
 const DELETED_IDS_KEY = 'deletedNewsIds';
+const WEIBO_SOURCE = '\u5fae\u535a\u70ed\u641c';
 
 function sortByTimestamp(items) {
     return [...items].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -71,7 +72,7 @@ export default function NewsFeed() {
         Object.keys(groups).forEach((source) => {
             let items = groups[source];
 
-            if (source === '微博热搜') {
+            if (source === WEIBO_SOURCE) {
                 items = items.length > 3 ? items.slice(3) : [];
             }
 
@@ -89,49 +90,52 @@ export default function NewsFeed() {
         setReservePool(nextReservePool);
     }, []);
 
-    const fetchNews = useCallback(async (forceRefresh = false) => {
-        setLoading(true);
+    const fetchNews = useCallback(
+        async (forceRefresh = false) => {
+            setLoading(true);
 
-        try {
-            if (!forceRefresh) {
-                const cached = APICache.get(NEWS_CACHE_KEY);
-                if (isUsableCachedNews(cached)) {
-                    initializeNewsLists(cached);
-                    const cacheInfo = APICache.getInfo(NEWS_CACHE_KEY);
-                    if (cacheInfo) {
-                        setCacheStatus({
-                            fromCache: true,
-                            age: Math.floor(cacheInfo.age / 1000),
-                            remaining: Math.floor(cacheInfo.remaining / 1000),
-                        });
+            try {
+                if (!forceRefresh) {
+                    const cached = APICache.get(NEWS_CACHE_KEY);
+                    if (isUsableCachedNews(cached)) {
+                        initializeNewsLists(cached);
+                        const cacheInfo = APICache.getInfo(NEWS_CACHE_KEY);
+                        if (cacheInfo) {
+                            setCacheStatus({
+                                fromCache: true,
+                                age: Math.floor(cacheInfo.age / 1000),
+                                remaining: Math.floor(cacheInfo.remaining / 1000),
+                            });
+                        }
+                        return;
                     }
-                    return;
+
+                    if (cached) {
+                        APICache.remove(NEWS_CACHE_KEY);
+                    }
                 }
 
-                if (cached) {
-                    APICache.remove(NEWS_CACHE_KEY);
+                const response = await fetch('/api/news');
+                const data = await response.json();
+
+                if (data.success) {
+                    initializeNewsLists(data.data);
+                    APICache.set(NEWS_CACHE_KEY, data.data);
+                    setCacheStatus({
+                        fromCache: false,
+                        age: 0,
+                        remaining: 600,
+                    });
                 }
+            } catch (error) {
+                console.error('Failed to fetch news:', error);
+            } finally {
+                setLoading(false);
+                setIsRefreshing(false);
             }
-
-            const response = await fetch('/api/news');
-            const data = await response.json();
-
-            if (data.success) {
-                initializeNewsLists(data.data);
-                APICache.set(NEWS_CACHE_KEY, data.data);
-                setCacheStatus({
-                    fromCache: false,
-                    age: 0,
-                    remaining: 600,
-                });
-            }
-        } catch (error) {
-            console.error('Failed to fetch news:', error);
-        } finally {
-            setLoading(false);
-            setIsRefreshing(false);
-        }
-    }, [initializeNewsLists]);
+        },
+        [initializeNewsLists]
+    );
 
     const handleDeleteCard = (cardId, source) => {
         const nextDeletedIds = [...deletedIds, cardId];
@@ -189,7 +193,9 @@ export default function NewsFeed() {
         pullStartY.current = null;
     };
 
-    const cacheText = cacheStatus?.fromCache ? `缓存 ${formatRelativeAge(cacheStatus.age)}` : '最新数据';
+    const cacheText = cacheStatus?.fromCache
+        ? `\u7f13\u5b58 ${formatRelativeAge(cacheStatus.age)}`
+        : '\u6700\u65b0\u6570\u636e';
 
     return (
         <div
@@ -198,11 +204,17 @@ export default function NewsFeed() {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            {isRefreshing && <div className={styles.refreshState}>正在刷新热点...</div>}
+            {isRefreshing && (
+                <div className={styles.refreshState}>
+                    {'\u6b63\u5728\u5237\u65b0\u70ed\u70b9...'}
+                </div>
+            )}
 
             <div className={styles.grid}>
                 {loading && displayedNews.length === 0 ? (
-                    [...Array(6)].map((_, index) => <div key={index} className={styles.skeletonCard}></div>)
+                    [...Array(6)].map((_, index) => (
+                        <div key={index} className={styles.skeletonCard}></div>
+                    ))
                 ) : (
                     displayedNews.map((item) => (
                         <NewsCard
@@ -213,20 +225,24 @@ export default function NewsFeed() {
                     ))
                 )}
 
-                {!loading && displayedNews.length === 0 && <div className={styles.emptyState}>暂无数据</div>}
+                {!loading && displayedNews.length === 0 && (
+                    <div className={styles.emptyState}>{'\u6682\u65e0\u6570\u636e'}</div>
+                )}
             </div>
 
             <footer className={styles.footer}>
                 <div className={styles.footerContent}>
-                    <span>v{packageJson.version}</span>
-                    <span>·</span>
-                    <span>下拉刷新</span>
-                    <span>·</span>
-                    <span>左滑删除</span>
-                    <span>·</span>
-                    <span>{displayedNews.length} 条展示中</span>
-                    <span>·</span>
-                    <span>{cacheText}</span>
+                    <span className={styles.footerPill}>v{packageJson.version}</span>
+                    <span className={styles.footerDot}>•</span>
+                    <span className={styles.footerPill}>{'\u4e0b\u62c9\u5237\u65b0'}</span>
+                    <span className={styles.footerDot}>•</span>
+                    <span className={styles.footerPill}>{'\u5de6\u6ed1\u5220\u9664'}</span>
+                    <span className={styles.footerDot}>•</span>
+                    <span className={styles.footerPill}>
+                        {displayedNews.length} {'\u6761\u5c55\u793a\u4e2d'}
+                    </span>
+                    <span className={styles.footerDot}>•</span>
+                    <span className={styles.footerPill}>{cacheText}</span>
                 </div>
             </footer>
         </div>
