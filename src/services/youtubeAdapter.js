@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
-import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
+import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
 
+// YouTube 热门视频适配器
 export const YouTubeAdapter = {
     async fetchTrending() {
         try {
@@ -11,15 +12,19 @@ export const YouTubeAdapter = {
             }
 
             const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=20&key=${apiKey}`;
-            const response = await fetchWithTimeout(url, {
-                headers: {
-                    Accept: 'application/json',
+            const response = await fetchWithTimeout(
+                url,
+                {
+                    headers: {
+                        Accept: 'application/json',
+                    },
                 },
-            }, 8000);
+                8000
+            );
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[YouTube] API error (${response.status}):`, errorText);
+                console.error(`[YouTube] 接口返回错误 (${response.status}):`, errorText);
 
                 Sentry.captureException(new Error(`YouTube API error: ${response.status}`), {
                     tags: {
@@ -38,14 +43,14 @@ export const YouTubeAdapter = {
 
             const data = await response.json();
             if (!data.items?.length) {
-                console.error('[YouTube] No items returned');
+                console.error('[YouTube] 未返回任何视频条目');
                 return this.getFallbackVideos();
             }
 
             return data.items
                 .filter((item) => isLikelyUsefulTitle(item.snippet?.title))
-                .map((item, index) => ({
-                    id: `youtube-${item.id}-${index}`,
+                .map((item) => ({
+                    id: `youtube-${item.id}`,
                     source: 'YouTube',
                     titleOriginal: item.snippet.title,
                     titleTranslated: null,
@@ -55,7 +60,7 @@ export const YouTubeAdapter = {
                     thumbnail: null,
                 }));
         } catch (error) {
-            console.error('[YouTube] Exception:', error.message);
+            console.error('[YouTube] 请求异常:', error.message);
 
             Sentry.captureException(error, {
                 tags: {
@@ -71,6 +76,7 @@ export const YouTubeAdapter = {
         }
     },
 
+    // 将播放量数值格式化为 K / M 简写
     formatViews(viewCount) {
         if (!viewCount) return '0';
         const count = parseInt(viewCount, 10);
@@ -83,13 +89,13 @@ export const YouTubeAdapter = {
         return count.toString();
     },
 
+    // 当未配置 API Key 或请求失败时使用的兜底数据
     getFallbackVideos() {
         const now = new Date().toISOString();
-        const baseTime = Date.now();
 
         return [
             {
-                id: `youtube-${baseTime}-0`,
+                id: generateStableId('youtube-fallback', 'Top Tech Reviews & Unboxing Videos'),
                 source: 'YouTube',
                 titleOriginal: 'Top Tech Reviews & Unboxing Videos',
                 titleTranslated: null,
@@ -99,7 +105,7 @@ export const YouTubeAdapter = {
                 thumbnail: null,
             },
             {
-                id: `youtube-${baseTime}-1`,
+                id: generateStableId('youtube-fallback', 'Latest Gaming Highlights & Walkthroughs'),
                 source: 'YouTube',
                 titleOriginal: 'Latest Gaming Highlights & Walkthroughs',
                 titleTranslated: null,
@@ -109,7 +115,7 @@ export const YouTubeAdapter = {
                 thumbnail: null,
             },
             {
-                id: `youtube-${baseTime}-2`,
+                id: generateStableId('youtube-fallback', 'Trending Music Videos & Performances'),
                 source: 'YouTube',
                 titleOriginal: 'Trending Music Videos & Performances',
                 titleTranslated: null,
@@ -119,7 +125,7 @@ export const YouTubeAdapter = {
                 thumbnail: null,
             },
             {
-                id: `youtube-${baseTime}-3`,
+                id: generateStableId('youtube-fallback', 'Breaking News & Current Events'),
                 source: 'YouTube',
                 titleOriginal: 'Breaking News & Current Events',
                 titleTranslated: null,
@@ -129,7 +135,7 @@ export const YouTubeAdapter = {
                 thumbnail: null,
             },
             {
-                id: `youtube-${baseTime}-4`,
+                id: generateStableId('youtube-fallback', 'Popular Entertainment & Comedy'),
                 source: 'YouTube',
                 titleOriginal: 'Popular Entertainment & Comedy',
                 titleTranslated: null,

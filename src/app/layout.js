@@ -1,8 +1,9 @@
 import './globals.css';
 
+// 全局页面元数据配置
 export const metadata = {
     title: 'Global News PWA',
-    description: 'Real-time global news aggregator with translation.',
+    description: '实时全球热点新闻聚合与智能中文翻译',
     manifest: '/manifest.json',
     appleWebApp: {
         capable: true,
@@ -14,12 +15,11 @@ export const metadata = {
     },
 };
 
+// 视口与主题色配置（允许用户自由缩放以提升无障碍体验）
 export const viewport = {
     width: 'device-width',
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    themeColor: '#121212',
+    themeColor: '#eef6ff',
 };
 
 export default function RootLayout({ children }) {

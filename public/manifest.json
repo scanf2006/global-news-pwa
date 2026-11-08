@@ -1,11 +1,11 @@
 {
   "name": "Global News PWA",
   "short_name": "NewsGlobal",
-  "description": "Real-time global news aggregator with translation.",
+  "description": "实时全球热点新闻聚合与智能中文翻译",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#121212",
+  "background_color": "#eef6ff",
+  "theme_color": "#eef6ff",
   "icons": [
     {
       "src": "/icons/icon.svg",

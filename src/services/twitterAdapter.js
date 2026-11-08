@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
-import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
+import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
 
+// X (Twitter) 趋势数据源列表（按优先级排列）
 const SOURCES = [
     'https://getdaytrends.com/united-states/',
     'https://getdaytrends.com/',
@@ -8,7 +9,8 @@ const SOURCES = [
 ];
 
 const REQUEST_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
 };
 
@@ -20,7 +22,7 @@ export const TwitterAdapter = {
                     const response = await fetchWithTimeout(url, { headers: REQUEST_HEADERS }, 8000);
 
                     if (!response.ok) {
-                        console.warn(`[TwitterAdapter] Failed to fetch ${url}: ${response.status}`);
+                        console.warn(`[TwitterAdapter] 请求失败 ${url}: ${response.status}`);
                         continue;
                     }
 
@@ -40,7 +42,7 @@ export const TwitterAdapter = {
 
                             if (isLikelyUsefulTitle(title)) {
                                 trends.push({
-                                    id: `twitter-${index}-${Date.now()}`,
+                                    id: generateStableId('twitter', title),
                                     source: 'X (Twitter)',
                                     titleOriginal: title,
                                     titleTranslated: null,
@@ -60,7 +62,7 @@ export const TwitterAdapter = {
                             const title = $(element).find('.cw-list-name').text().trim();
                             if (isLikelyUsefulTitle(title)) {
                                 trends.push({
-                                    id: `twitter-backup-${index}-${Date.now()}`,
+                                    id: generateStableId('twitter', title),
                                     source: 'X (Twitter)',
                                     titleOriginal: title,
                                     titleTranslated: null,
@@ -77,13 +79,13 @@ export const TwitterAdapter = {
                         return trends;
                     }
                 } catch (error) {
-                    console.error(`[TwitterAdapter] Error parsing ${url}:`, error);
+                    console.error(`[TwitterAdapter] 解析源 ${url} 出错:`, error.message);
                 }
             }
 
             return [];
         } catch (error) {
-            console.error('[TwitterAdapter] Critical Error:', error);
+            console.error('[TwitterAdapter] 严重错误:', error.message);
             return [];
         }
     },

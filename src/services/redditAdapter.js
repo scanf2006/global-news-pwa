@@ -1,18 +1,23 @@
 import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
 
+// Reddit 热门帖子适配器
 export const RedditAdapter = {
     async fetchTrending() {
         try {
-            const response = await fetchWithTimeout('https://www.reddit.com/r/popular.json?limit=20', {
-                headers: {
-                    'User-Agent': 'global-news-pwa/1.0',
-                    Accept: 'application/json',
+            const response = await fetchWithTimeout(
+                'https://www.reddit.com/r/popular.json?limit=20',
+                {
+                    headers: {
+                        'User-Agent': 'global-news-pwa/1.0',
+                        Accept: 'application/json',
+                    },
+                    next: { revalidate: 300 },
                 },
-                next: { revalidate: 300 },
-            }, 8000);
+                8000
+            );
 
             if (!response.ok) {
-                throw new Error(`Reddit returned ${response.status}`);
+                throw new Error(`Reddit 接口返回状态码 ${response.status}`);
             }
 
             const data = await response.json();
@@ -31,7 +36,7 @@ export const RedditAdapter = {
                     thumbnail: null,
                 }));
         } catch (error) {
-            console.error('RedditAdapter Error:', error);
+            console.error('RedditAdapter 抓取错误:', error.message);
             return [];
         }
     },

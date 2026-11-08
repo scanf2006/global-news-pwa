@@ -1,33 +1,41 @@
 import Parser from 'rss-parser';
-import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
+import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
 
+// 初始化自定义超时抓取的 RSS 解析器
 const parser = new Parser({
-    customFetch: (url) => fetchWithTimeout(url, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
-        },
-    }, 8000),
+    customFetch: (url) =>
+        fetchWithTimeout(
+            url,
+            {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+                },
+            },
+            8000
+        ),
 });
 
+// 全球及北美主流媒体 RSS 订阅源配置
 const RSS_FEEDS = {
     'BBC News': 'http://feeds.bbci.co.uk/news/world/rss.xml',
     'New York Times': 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
     'The Guardian': 'https://www.theguardian.com/world/rss',
     'Al Jazeera': 'https://www.aljazeera.com/xml/rss/all.xml',
-    'CNN': 'https://news.google.com/rss/search?q=site:cnn.com&hl=en-US&gl=US&ceid=US:en',
+    CNN: 'https://news.google.com/rss/search?q=site:cnn.com&hl=en-US&gl=US&ceid=US:en',
     'CBS News': 'https://www.cbsnews.com/latest/rss/main',
     'CBC Toronto': 'https://www.cbc.ca/cmlink/rss-canada-toronto',
     'Global News': 'https://globalnews.ca/toronto/feed/',
     'Toronto Star': 'https://www.thestar.com/search/?f=rss&t=article&s=start_time&sd=desc&l=10',
-    'CP24': 'http://mybreakingnews.cp24.com/feed.xml',
+    CP24: 'http://mybreakingnews.cp24.com/feed.xml',
 };
 
 export const RSSAdapter = {
+    // 抓取单个 RSS 源的热门新闻
     async fetchTrending(sourceName) {
         const feedUrl = RSS_FEEDS[sourceName];
         if (!feedUrl) {
-            console.error(`RSS Feed not found for source: ${sourceName}`);
+            console.error(`未找到对应的 RSS 源配置: ${sourceName}`);
             return [];
         }
 
@@ -36,8 +44,8 @@ export const RSSAdapter = {
             return feed.items
                 .filter((item) => item.link && isLikelyUsefulTitle(item.title))
                 .slice(0, 20)
-                .map((item, index) => ({
-                    id: `rss-${sourceName}-${index}-${Date.now()}`,
+                .map((item) => ({
+                    id: generateStableId(`rss-${sourceName}`, item.link || item.title),
                     source: sourceName,
                     titleOriginal: item.title,
                     titleTranslated: null,
@@ -47,13 +55,16 @@ export const RSSAdapter = {
                     thumbnail: null,
                 }));
         } catch (error) {
-            console.error(`RSSAdapter Error (${sourceName}):`, error);
+            console.error(`RSSAdapter 抓取失败 (${sourceName}):`, error.message);
             return [];
         }
     },
 
+    // 并发抓取所有 RSS 源
     async fetchAll() {
-        const results = await Promise.all(Object.keys(RSS_FEEDS).map((source) => this.fetchTrending(source)));
+        const results = await Promise.all(
+            Object.keys(RSS_FEEDS).map((source) => this.fetchTrending(source))
+        );
         return results.flat();
     },
 };

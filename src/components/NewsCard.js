@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { formatRelativeTime } from '@/services/serviceUtils';
 import styles from './NewsCard.module.css';
 
+// 获取展示在卡片顶部的来源标签（最多展示 3 个）
 function getSourceChips(item) {
     if (item?.sourceList?.length) {
         return item.sourceList.slice(0, 3);
     }
 
-    return item?.source ? [item.source] : ['\u672a\u77e5\u6765\u6e90'];
+    return item?.source ? [item.source] : ['未知来源'];
 }
 
 export default function NewsCard({ item, onDelete }) {
@@ -18,11 +19,26 @@ export default function NewsCard({ item, onDelete }) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
+    const hasSwipedRef = useRef(false);
 
     const DELETE_THRESHOLD = -100;
 
+    // 触发卡片移除动画并回调父组件删除
+    const triggerDelete = () => {
+        if (isDeleting) {
+            return;
+        }
+        setIsDeleting(true);
+        setTranslateX(-500);
+
+        setTimeout(() => {
+            onDelete(item.id);
+        }, 300);
+    };
+
     const handleTouchStart = (event) => {
         startX.current = event.touches[0].clientX;
+        hasSwipedRef.current = false;
         setIsDragging(true);
     };
 
@@ -33,6 +49,10 @@ export default function NewsCard({ item, onDelete }) {
 
         const currentX = event.touches[0].clientX;
         const diff = currentX - startX.current;
+
+        if (Math.abs(diff) > 10) {
+            hasSwipedRef.current = true;
+        }
 
         if (diff < 0) {
             setTranslateX(diff);
@@ -47,16 +67,26 @@ export default function NewsCard({ item, onDelete }) {
         setIsDragging(false);
 
         if (translateX < DELETE_THRESHOLD) {
-            setIsDeleting(true);
-            setTranslateX(-500);
-
-            setTimeout(() => {
-                onDelete(item.id);
-            }, 300);
+            triggerDelete();
             return;
         }
 
         setTranslateX(0);
+    };
+
+    // 防止左滑拖拽释放时误触发链接点击跳转
+    const handleCardClick = (event) => {
+        if (hasSwipedRef.current) {
+            event.preventDefault();
+            hasSwipedRef.current = false;
+        }
+    };
+
+    // 支持桌面端与无障碍按钮直接删除卡片
+    const handleDeleteButtonClick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        triggerDelete();
     };
 
     const cardStyle = {
@@ -73,14 +103,13 @@ export default function NewsCard({ item, onDelete }) {
     const relativeTime = formatRelativeTime(item?.timestamp);
     const sourceChips = getSourceChips(item);
     const hasMergedSources = (item?.sourceList?.length || 0) > 1;
-    const translatedTitle =
-        item?.titleTranslated || item?.titleOriginal || '\u65e0\u6807\u9898';
+    const translatedTitle = item?.titleTranslated || item?.titleOriginal || '无标题';
 
     return (
         <div className={styles.cardWrapper}>
             <div className={styles.deleteIndicator} style={deleteIndicatorStyle}>
                 <div className={styles.deleteAction}>
-                    <span className={styles.deleteLabel}>{'\u5220\u9664'}</span>
+                    <span className={styles.deleteLabel}>删除</span>
                 </div>
             </div>
 
@@ -90,6 +119,7 @@ export default function NewsCard({ item, onDelete }) {
                 rel="noopener noreferrer"
                 className={styles.card}
                 style={cardStyle}
+                onClick={handleCardClick}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -103,12 +133,21 @@ export default function NewsCard({ item, onDelete }) {
                                 </span>
                             ))}
                             {hasMergedSources && (
-                                <span className={styles.mergeBadge}>
-                                    {'\u591a\u6e90\u5171\u632f'}
-                                </span>
+                                <span className={styles.mergeBadge}>多源共振</span>
                             )}
                         </div>
-                        {item?.views && <span className={styles.views}>{item.views}</span>}
+                        <div className={styles.metaRight}>
+                            {item?.views && <span className={styles.views}>{item.views}</span>}
+                            <button
+                                type="button"
+                                className={styles.dismissButton}
+                                onClick={handleDeleteButtonClick}
+                                aria-label="删除此条新闻"
+                                title="删除此条新闻"
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
 
                     <div className={styles.titleBlock}>

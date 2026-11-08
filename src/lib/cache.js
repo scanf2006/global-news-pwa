@@ -1,6 +1,7 @@
 const DEFAULT_CACHE_DURATION = 10 * 60 * 1000;
 const CACHE_PREFIX = 'api_cache_';
 
+// 客户端 localStorage 接口缓存管理类
 export class APICache {
     static get(key) {
         try {
@@ -21,7 +22,7 @@ export class APICache {
 
             return data;
         } catch (error) {
-            console.error('[Cache] Error reading cache:', error);
+            console.error('[Cache] 读取缓存失败:', error);
             return null;
         }
     }
@@ -36,7 +37,7 @@ export class APICache {
             };
             localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (error) {
-            console.error('[Cache] Error writing cache:', error);
+            console.error('[Cache] 写入缓存失败:', error);
             if (error.name === 'QuotaExceededError') {
                 this.clearOldCache();
 
@@ -49,7 +50,7 @@ export class APICache {
                     };
                     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
                 } catch (retryError) {
-                    console.error('[Cache] Retry failed:', retryError);
+                    console.error('[Cache] 重试写入缓存失败:', retryError);
                 }
             }
         }
@@ -59,7 +60,7 @@ export class APICache {
         try {
             localStorage.removeItem(CACHE_PREFIX + key);
         } catch (error) {
-            console.error('[Cache] Error removing cache:', error);
+            console.error('[Cache] 删除缓存失败:', error);
         }
     }
 
@@ -69,7 +70,7 @@ export class APICache {
                 .filter((key) => key.startsWith(CACHE_PREFIX))
                 .forEach((key) => localStorage.removeItem(key));
         } catch (error) {
-            console.error('[Cache] Error clearing cache:', error);
+            console.error('[Cache] 清空缓存失败:', error);
         }
     }
 
@@ -93,7 +94,7 @@ export class APICache {
                     }
                 });
         } catch (error) {
-            console.error('[Cache] Error clearing old cache:', error);
+            console.error('[Cache] 清理过期缓存失败:', error);
         }
     }
 
@@ -115,7 +116,7 @@ export class APICache {
                 timestamp,
             };
         } catch (error) {
-            console.error('[Cache] Error getting cache info:', error);
+            console.error('[Cache] 获取缓存信息失败:', error);
             return null;
         }
     }
