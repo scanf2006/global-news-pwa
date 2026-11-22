@@ -23,6 +23,7 @@ npm run dev
 ```bash
 npm run dev
 npm run lint
+npm test
 npm run build
 npm run start
 ```
@@ -32,7 +33,6 @@ npm run start
 - `YOUTUBE_API_KEY`
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `NEXT_PUBLIC_APP_VERSION`
-- `XIAOHONGSHU_API_KEY`
 
 ## 结构说明
 
@@ -41,14 +41,16 @@ npm run start
 - `src/app/api/diagnostics/route.js`: 开发环境 YouTube 健康检查
 - `src/app/api/diagnostics/weibo/route.js`: 开发环境微博备用源检查
 - `src/services/*`: 各平台抓取与聚合逻辑
+- `src/services/newsNormalizer.js`: 链接、时间规范化与多源合并
 - `src/components/*`: 页面组件
+- `tests/*`: Node 内置测试
 - `public/manifest.json`: PWA 清单
 
 ## 健康检查
 
 - 开发环境可访问 `/api/diagnostics`
 - 开发环境可访问 `/api/diagnostics/weibo`
-- 发布前至少执行一次 `npm run lint` 和 `npm run build`
+- 发布前至少执行一次 `npm run lint`、`npm test` 和 `npm run build`
 
 ## 依赖与安全说明
 

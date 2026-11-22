@@ -1,9 +1,11 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Link from 'next/link';
 import { formatRelativeTime } from '@/services/serviceUtils';
 import styles from './NewsCard.module.css';
+
+const DELETE_THRESHOLD = -100;
+const GESTURE_LOCK_DISTANCE = 10;
 
 // 获取展示在卡片顶部的来源标签（最多展示 3 个）
 function getSourceChips(item) {
@@ -18,10 +20,9 @@ export default function NewsCard({ item, onDelete }) {
     const [translateX, setTranslateX] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
-    const startX = useRef(0);
+    const touchStart = useRef({ x: 0, y: 0 });
+    const gestureAxis = useRef(null);
     const hasSwipedRef = useRef(false);
-
-    const DELETE_THRESHOLD = -100;
 
     // 触发卡片移除动画并回调父组件删除
     const triggerDelete = () => {
@@ -37,7 +38,9 @@ export default function NewsCard({ item, onDelete }) {
     };
 
     const handleTouchStart = (event) => {
-        startX.current = event.touches[0].clientX;
+        const touch = event.touches[0];
+        touchStart.current = { x: touch.clientX, y: touch.clientY };
+        gestureAxis.current = null;
         hasSwipedRef.current = false;
         setIsDragging(true);
     };
@@ -47,15 +50,21 @@ export default function NewsCard({ item, onDelete }) {
             return;
         }
 
-        const currentX = event.touches[0].clientX;
-        const diff = currentX - startX.current;
+        const touch = event.touches[0];
+        const diffX = touch.clientX - touchStart.current.x;
+        const diffY = touch.clientY - touchStart.current.y;
 
-        if (Math.abs(diff) > 10) {
-            hasSwipedRef.current = true;
+        // 移动超过阈值后锁定方向，纵向滚动不再带动卡片
+        if (!gestureAxis.current) {
+            if (Math.max(Math.abs(diffX), Math.abs(diffY)) < GESTURE_LOCK_DISTANCE) {
+                return;
+            }
+            gestureAxis.current = Math.abs(diffX) > Math.abs(diffY) ? 'x' : 'y';
+            hasSwipedRef.current = gestureAxis.current === 'x';
         }
 
-        if (diff < 0) {
-            setTranslateX(diff);
+        if (gestureAxis.current === 'x') {
+            setTranslateX(Math.min(diffX, 0));
         }
     };
 
@@ -66,7 +75,7 @@ export default function NewsCard({ item, onDelete }) {
 
         setIsDragging(false);
 
-        if (translateX < DELETE_THRESHOLD) {
+        if (gestureAxis.current === 'x' && translateX < DELETE_THRESHOLD) {
             triggerDelete();
             return;
         }
@@ -74,19 +83,23 @@ export default function NewsCard({ item, onDelete }) {
         setTranslateX(0);
     };
 
-    // 防止左滑拖拽释放时误触发链接点击跳转
-    const handleCardClick = (event) => {
-        if (hasSwipedRef.current) {
-            event.preventDefault();
-            hasSwipedRef.current = false;
+    // 手势被系统中断时恢复卡片位置
+    const handleTouchCancel = () => {
+        setIsDragging(false);
+        gestureAxis.current = null;
+        hasSwipedRef.current = false;
+        if (!isDeleting) {
+            setTranslateX(0);
         }
     };
 
-    // 支持桌面端与无障碍按钮直接删除卡片
-    const handleDeleteButtonClick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        triggerDelete();
+    // 防止左滑释放时误触发链接或删除按钮
+    const handleClickCapture = (event) => {
+        if (hasSwipedRef.current) {
+            event.preventDefault();
+            event.stopPropagation();
+            hasSwipedRef.current = false;
+        }
     };
 
     const cardStyle = {
@@ -100,7 +113,7 @@ export default function NewsCard({ item, onDelete }) {
         transition: 'opacity 0.2s',
     };
 
-    const relativeTime = formatRelativeTime(item?.timestamp);
+    const timeLabel = item?.hasPublishedTime === false ? '热榜' : formatRelativeTime(item?.timestamp);
     const sourceChips = getSourceChips(item);
     const hasMergedSources = (item?.sourceList?.length || 0) > 1;
     const translatedTitle = item?.titleTranslated || item?.titleOriginal || '无标题';
@@ -113,16 +126,14 @@ export default function NewsCard({ item, onDelete }) {
                 </div>
             </div>
 
-            <Link
-                href={item?.url || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
+            <article
                 className={styles.card}
                 style={cardStyle}
-                onClick={handleCardClick}
+                onClickCapture={handleClickCapture}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchCancel}
             >
                 <div className={styles.content}>
                     <div className={styles.metaTop}>
@@ -141,7 +152,7 @@ export default function NewsCard({ item, onDelete }) {
                             <button
                                 type="button"
                                 className={styles.dismissButton}
-                                onClick={handleDeleteButtonClick}
+                                onClick={triggerDelete}
                                 aria-label="删除此条新闻"
                                 title="删除此条新闻"
                             >
@@ -151,11 +162,20 @@ export default function NewsCard({ item, onDelete }) {
                     </div>
 
                     <div className={styles.titleBlock}>
-                        <h3 className={styles.title}>{translatedTitle}</h3>
-                        {relativeTime && <span className={styles.titleTime}>{relativeTime}</span>}
+                        <h3 className={styles.title}>
+                            <a
+                                href={item?.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.titleLink}
+                            >
+                                {translatedTitle}
+                            </a>
+                        </h3>
+                        {timeLabel && <span className={styles.titleTime}>{timeLabel}</span>}
                     </div>
                 </div>
-            </Link>
+            </article>
         </div>
     );
 }

@@ -66,8 +66,9 @@
 }
 
 .card {
-    display: block;
+    display: flex;
     position: relative;
+    touch-action: pan-y;
     width: 100%;
     min-height: 172px;
     isolation: isolate;
@@ -97,7 +98,7 @@
 }
 
 .card:hover,
-.card:focus-visible {
+.card:has(.titleLink:focus-visible) {
     transform: translateY(-5px) scale(1.012);
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.26)),
@@ -108,7 +109,11 @@
         inset 0 -1px 0 rgba(255, 255, 255, 0.3),
         0 24px 50px rgba(148, 163, 184, 0.22),
         0 8px 20px rgba(255, 255, 255, 0.38);
-    outline: none;
+}
+
+.card:has(.titleLink:focus-visible) {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
 }
 
 .card:active {
@@ -145,7 +150,7 @@
 }
 
 .card:hover::after,
-.card:focus-visible::after {
+.card:has(.titleLink:focus-visible)::after {
     transform: translateX(8%);
 }
 
@@ -155,7 +160,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.74rem;
-    height: 100%;
+    flex: 1;
+    min-width: 0;
 }
 
 .metaTop {
@@ -221,6 +227,8 @@
 }
 
 .metaRight {
+    position: relative;
+    z-index: 2;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -277,6 +285,20 @@
     overflow: hidden;
 }
 
+.titleLink {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+}
+
+/* 扩展标题链接的点击区域到整张卡片 */
+.titleLink::before {
+    content: '';
+    position: absolute;
+    inset: -1.25rem;
+    z-index: 1;
+}
+
 .titleTime {
     display: inline-flex;
     align-items: center;
@@ -320,7 +342,7 @@
     }
 
     .card:hover,
-    .card:focus-visible {
+    .card:has(.titleLink:focus-visible) {
         transform: none;
     }
 

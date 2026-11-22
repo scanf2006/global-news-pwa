@@ -4,21 +4,13 @@ import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
 import { WeiboAdapter } from './weiboAdapter';
 import { YouTubeAdapter } from './youtubeAdapter';
-import {
-    TWITTER_SOURCE,
-    calculateTokenSimilarity,
-    containsCjk,
-    fetchWithTimeout,
-    isLikelyUsefulTitle,
-    normalizeTitle,
-} from './serviceUtils';
+import { dedupeNewsItems, mergeSimilarNewsItems, normalizeNewsItems } from './newsNormalizer';
+import { TWITTER_SOURCE, compareNewsItems, containsCjk, fetchWithTimeout } from './serviceUtils';
 
 const translationCache = new Map();
 const MAX_TRANSLATION_CACHE_SIZE = 1000;
 const AGGREGATED_NEWS_CACHE_KEY = 'aggregated_all_news';
 const AGGREGATED_NEWS_TTL_SECONDS = 180; // 服务端聚合缓存 3 分钟
-const SIMILARITY_THRESHOLD = 0.72;
-const MERGE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const FORCE_REFRESH_COOLDOWN_MS = 60 * 1000;
 const MAX_TRANSLATED_ITEMS_PER_SOURCE = 15; // 与前端展示数 + 替补数保持一致
 const TRANSLATION_CONCURRENCY = 6;
@@ -40,94 +32,6 @@ function setTranslationCache(originalText, translatedText) {
         }
     }
     translationCache.set(originalText, translatedText);
-}
-
-/**
- * 生成单条新闻的去重键
- */
-function getItemDedupKey(item) {
-    const normalizedTitle = normalizeTitle(item.titleOriginal || item.titleTranslated);
-    const url = item.url || '';
-    return `${item.source}|${normalizedTitle}|${url}`;
-}
-
-/**
- * 过滤无效条目并按去重键去重
- */
-function dedupeNewsItems(items) {
-    const seen = new Set();
-    const dedupedItems = [];
-
-    for (const item of items) {
-        if (
-            !item?.url ||
-            !isLikelyUsefulTitle(item.titleOriginal || item.titleTranslated, item.source)
-        ) {
-            continue;
-        }
-
-        const key = getItemDedupKey(item);
-        if (seen.has(key)) {
-            continue;
-        }
-
-        seen.add(key);
-        dedupedItems.push(item);
-    }
-
-    return dedupedItems;
-}
-
-/**
- * 合并 24 小时内标题高度相似的多源热点新闻
- * 保留首个主来源作为 item.source 以便前端分组与备用池正常替换，同时将全部来源记录在 sourceList 中
- */
-function mergeSimilarNewsItems(items) {
-    const mergedItems = [];
-
-    for (const item of items) {
-        const matchingItem = mergedItems.find((existingItem) => {
-            const timeDistance = Math.abs(
-                new Date(existingItem.timestamp) - new Date(item.timestamp)
-            );
-            if (timeDistance > MERGE_WINDOW_MS) {
-                return false;
-            }
-
-            const exactMatch =
-                normalizeTitle(existingItem.titleOriginal) === normalizeTitle(item.titleOriginal);
-            if (exactMatch) {
-                return true;
-            }
-
-            return (
-                calculateTokenSimilarity(existingItem.titleOriginal, item.titleOriginal) >=
-                SIMILARITY_THRESHOLD
-            );
-        });
-
-        if (!matchingItem) {
-            mergedItems.push({
-                ...item,
-                sourceList: [item.source],
-            });
-            continue;
-        }
-
-        matchingItem.sourceList = Array.from(
-            new Set([...(matchingItem.sourceList || [matchingItem.source]), item.source])
-        );
-
-        if (new Date(item.timestamp) > new Date(matchingItem.timestamp)) {
-            matchingItem.timestamp = item.timestamp;
-        }
-
-        if (!matchingItem.views && item.views) {
-            matchingItem.views = item.views;
-        }
-    }
-
-    return mergedItems;
 }
 
 /**
@@ -273,15 +177,13 @@ async function aggregateNews() {
         .filter((result) => result.status === 'fulfilled')
         .flatMap((result) => result.value);
 
-    const validNews = dedupeNewsItems(allNews);
+    const validNews = dedupeNewsItems(normalizeNewsItems(allNews));
     const availableSources = new Set(validNews.map((item) => item.source));
     const unavailableSources = [...RSSAdapter.sourceNames, ...NON_RSS_SOURCES].filter(
         (source) => !availableSources.has(source)
     );
 
-    const items = mergeSimilarNewsItems(validNews).sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-    );
+    const items = mergeSimilarNewsItems(validNews).sort(compareNewsItems);
 
     try {
         await translateBatch(items);

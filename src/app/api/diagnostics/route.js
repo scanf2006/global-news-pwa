@@ -24,8 +24,8 @@ export async function GET() {
 
     if (apiKey) {
         try {
-            const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=US&maxResults=1&key=${apiKey}`;
-            const response = await fetch(url);
+            const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=US&maxResults=1';
+            const response = await fetch(url, { headers: { 'X-Goog-Api-Key': apiKey } });
             const data = await response.json();
 
             diagnostics.apiTest = {

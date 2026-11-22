@@ -17,6 +17,42 @@
     box-sizing: border-box;
 }
 
+.toolbar {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto 0.6rem;
+    padding: 0 1.5rem;
+}
+
+.refreshButton {
+    min-height: 2.25rem;
+    padding: 0.4rem 1rem;
+    color: #1d4ed8;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.refreshButton:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.76);
+}
+
+.refreshButton:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.refreshButton:disabled {
+    cursor: default;
+    opacity: 0.65;
+}
+
 .refreshState {
     text-align: center;
     width: fit-content;

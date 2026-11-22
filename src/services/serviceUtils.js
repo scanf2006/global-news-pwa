@@ -171,6 +171,32 @@ export function calculateTokenSimilarity(titleA, titleB) {
 }
 
 /**
+ * 校验链接协议，只保留 http 和 https
+ */
+export function sanitizeHttpUrl(value) {
+    try {
+        const url = new URL(String(value || '').trim());
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 新闻排序：有发布时间的按时间倒序，热榜条目排在后面并保持原有名次
+ */
+export function compareNewsItems(a, b) {
+    const aPublished = a.hasPublishedTime !== false;
+    const bPublished = b.hasPublishedTime !== false;
+
+    if (aPublished !== bPublished) {
+        return aPublished ? -1 : 1;
+    }
+
+    return aPublished ? new Date(b.timestamp) - new Date(a.timestamp) : 0;
+}
+
+/**
  * 将秒数格式化为简短的相对时长字符串
  */
 export function formatRelativeAge(seconds) {
@@ -188,7 +214,11 @@ export function formatRelativeAge(seconds) {
     }
 
     const hours = Math.floor(minutes / 60);
-    return `${hours}h`;
+    if (hours < 24) {
+        return `${hours}h`;
+    }
+
+    return `${Math.floor(hours / 24)}d`;
 }
 
 /**

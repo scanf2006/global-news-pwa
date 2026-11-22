@@ -46,7 +46,7 @@ export const RSSAdapter = {
                     titleOriginal: item.title,
                     titleTranslated: null,
                     url: item.link,
-                    timestamp: item.pubDate || item.isoDate || new Date().toISOString(),
+                    timestamp: item.isoDate || item.pubDate || null,
                     views: null,
                     thumbnail: null,
                 }));

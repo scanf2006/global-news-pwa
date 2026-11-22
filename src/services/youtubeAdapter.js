@@ -11,12 +11,13 @@ export const YouTubeAdapter = {
                 return [];
             }
 
-            const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=20&key=${apiKey}`;
+            const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=20';
             const response = await fetchWithTimeout(
                 url,
                 {
                     headers: {
                         Accept: 'application/json',
+                        'X-Goog-Api-Key': apiKey,
                     },
                 },
                 8000

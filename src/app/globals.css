@@ -1,21 +1,6 @@
 :root {
-  --background: #0f172a;
-  --foreground: #f8fafc;
   --primary: #3b82f6;
-  --primary-foreground: #ffffff;
   --secondary: #1e293b;
-  --secondary-foreground: #f1f5f9;
-  --accent: #8b5cf6;
-  --accent-foreground: #ffffff;
-  --card: rgba(30, 41, 59, 0.7);
-  --card-foreground: #f8fafc;
-  --border: rgba(148, 163, 184, 0.2);
-  --input: rgba(148, 163, 184, 0.2);
-  --ring: #3b82f6;
-  --radius: 0.75rem;
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 12px;
 }
 
 * {
@@ -35,6 +20,7 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
   transition: background 0.5s ease;
   position: relative;
 }
@@ -111,38 +97,12 @@ h6 {
   background: var(--primary);
 }
 
-.glass-panel {
-  background: var(--card);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-}
-
-.text-gradient {
-  background: linear-gradient(to right, var(--primary), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
 @media (max-width: 640px) {
   body {
     background:
       radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.88), transparent 22%),
       radial-gradient(circle at 82% 14%, rgba(191, 219, 254, 0.62), transparent 26%),
       linear-gradient(180deg, #f5f9ff 0%, #deeeff 48%, #d2e8ff 100%);
-  }
-
-  .container {
-    padding: 0.5rem;
-    padding-bottom: 5rem;
   }
 }
 

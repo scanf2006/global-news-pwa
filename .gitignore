@@ -31,12 +31,19 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local env files
-.env*.local
-.env.local
+.env
+.env.*
+!.env.example
 
 # test files
 test_*.js
 live-news.json
+
+# generated service worker
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
 
 # Sentry
 .sentryclirc

@@ -3,21 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import packageJson from '../../package.json';
 import { APICache } from '@/lib/cache';
-import { formatRelativeAge } from '@/services/serviceUtils';
+import { compareNewsItems, formatRelativeAge } from '@/services/serviceUtils';
 import NewsCard from './NewsCard';
 import styles from './NewsFeed.module.css';
 
 const DISPLAY_COUNT_PER_SOURCE = 5;
 const RESERVE_COUNT_PER_SOURCE = 10;
 const MAX_DELETED_IDS = 200;
-const NEWS_CACHE_KEY = `news_v3_${packageJson.version}`;
+const NEWS_CACHE_KEY = `news_v4_${packageJson.version}`;
 const DELETED_IDS_KEY = 'deletedNewsIds';
 const WEIBO_SOURCE = '微博热搜';
 const STALE_CHECK_INTERVAL_MS = 60 * 1000;
 
-// 按发布时间倒序排列新闻
-function sortByTimestamp(items) {
-    return [...items].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+// 新闻按发布时间倒序，热榜排在后面
+function sortNews(items) {
+    return [...items].sort(compareNewsItems);
 }
 
 // 验证本地缓存结构是否可用（个别标题未翻译时仍可展示原文）
@@ -85,7 +85,7 @@ export default function NewsFeed() {
             nextReservePool[source] = toReserve;
         });
 
-        setFeed({ displayed: sortByTimestamp(initialDisplay), reserve: nextReservePool });
+        setFeed({ displayed: sortNews(initialDisplay), reserve: nextReservePool });
     }, []);
 
     // 拉取新闻：cache 优先读本地缓存，network 走服务端缓存，force 请求服务端重新抓取
@@ -187,7 +187,7 @@ export default function NewsFeed() {
             }
 
             return {
-                displayed: sortByTimestamp([...remaining, replacementItem]),
+                displayed: sortNews([...remaining, replacementItem]),
                 reserve: { ...previous.reserve, [source]: restReserve },
             };
         });
@@ -256,7 +256,19 @@ export default function NewsFeed() {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
         >
+            <div className={styles.toolbar}>
+                <button
+                    type="button"
+                    className={styles.refreshButton}
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                >
+                    {isRefreshing ? '刷新中…' : '刷新'}
+                </button>
+            </div>
+
             {isRefreshing && <div className={styles.refreshState}>正在刷新热点...</div>}
             {!isRefreshing && errorMessage && (
                 <div className={styles.refreshState} role="status">
