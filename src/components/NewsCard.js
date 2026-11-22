@@ -103,9 +103,30 @@ export default function NewsCard({ item, isRead, isSaved, onDelete, onToggleSave
         }
     };
 
+    // 鼠标移动时直接更新 CSS 变量，高光跟随指针且不触发 React 重渲染
+    const handlePointerMove = (event) => {
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+
+        const card = event.currentTarget;
+        const rect = card.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 100;
+        const y = ((event.clientY - rect.top) / rect.height) * 100;
+        card.style.setProperty('--glass-x', `${x.toFixed(1)}%`);
+        card.style.setProperty('--glass-y', `${y.toFixed(1)}%`);
+        card.style.setProperty('--glass-rim-angle', `${Math.round(90 + x * 0.9)}deg`);
+    };
+
+    const handlePointerLeave = (event) => {
+        const { style } = event.currentTarget;
+        style.removeProperty('--glass-x');
+        style.removeProperty('--glass-y');
+        style.removeProperty('--glass-rim-angle');
+    };
+
     const cardStyle = {
-        transform: `translateX(${translateX}px)`,
-        transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+        '--swipe-x': `${translateX}px`,
         opacity: isDeleting ? 0 : 1,
     };
 
@@ -133,6 +154,9 @@ export default function NewsCard({ item, isRead, isSaved, onDelete, onToggleSave
             <article
                 className={styles.card}
                 style={cardStyle}
+                data-dragging={isDragging}
+                onPointerMove={handlePointerMove}
+                onPointerLeave={handlePointerLeave}
                 onClickCapture={handleClickCapture}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}

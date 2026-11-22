@@ -8,6 +8,12 @@
   --control-bg: rgba(255, 255, 255, 0.62);
   --control-border: rgba(255, 255, 255, 0.78);
   --control-active: rgba(255, 255, 255, 0.95);
+  --page-base: linear-gradient(180deg, #e9f1ff 0%, #e6e9ff 48%, #dff3fb 100%);
+  --orb-blue: rgba(56, 132, 255, 0.62);
+  --orb-violet: rgba(155, 92, 255, 0.46);
+  --orb-coral: rgba(255, 122, 120, 0.42);
+  --orb-mint: rgba(45, 212, 191, 0.42);
+  --orb-amber: rgba(255, 196, 77, 0.38);
 }
 
 * {
@@ -17,57 +23,39 @@
 }
 
 body {
-  background:
-    radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.92), transparent 18%),
-    radial-gradient(circle at 84% 12%, rgba(191, 219, 254, 0.72), transparent 24%),
-    radial-gradient(circle at 50% 78%, rgba(186, 230, 253, 0.58), transparent 28%),
-    linear-gradient(180deg, #eef6ff 0%, #dbeafe 44%, #cfe9ff 100%);
-  background-attachment: fixed;
-  color: #1e293b;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
   min-height: 100vh;
   overflow-x: hidden;
   overscroll-behavior-y: contain;
-  transition: background 0.5s ease;
-  position: relative;
+  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+  background: var(--page-base);
+  background-attachment: fixed;
 }
 
+/* 彩色光斑为玻璃提供可折射的内容，只用 transform 做动画以减少重绘 */
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  inset: -18%;
+  z-index: -1;
   pointer-events: none;
   background:
-    linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.28) 26%, transparent 38% 100%),
-    linear-gradient(72deg, transparent 0 52%, rgba(219, 234, 254, 0.32) 62%, transparent 76% 100%),
-    linear-gradient(160deg, transparent 0 36%, rgba(186, 230, 253, 0.24) 46%, transparent 64% 100%);
-  background-size: 140% 140%, 120% 120%, 160% 160%;
-  filter: blur(24px);
-  opacity: 0.86;
-  z-index: 0;
-  animation: ambientGlassFlow 18s ease-in-out infinite alternate;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.18), transparent 32%, transparent 70%, rgba(255, 255, 255, 0.12)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%);
-  mix-blend-mode: screen;
-  opacity: 0.85;
-  z-index: 0;
+    radial-gradient(circle at 18% 20%, var(--orb-blue), transparent 26%),
+    radial-gradient(circle at 80% 14%, var(--orb-violet), transparent 27%),
+    radial-gradient(circle at 66% 52%, var(--orb-coral), transparent 24%),
+    radial-gradient(circle at 24% 72%, var(--orb-mint), transparent 27%),
+    radial-gradient(circle at 86% 84%, var(--orb-amber), transparent 25%);
+  animation: ambientGlassFlow 26s ease-in-out infinite alternate;
 }
 
 @keyframes ambientGlassFlow {
   0% {
-    background-position: 0% 8%, 100% 0%, 18% 100%;
+    transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1);
   }
 
   100% {
-    background-position: 100% 18%, 0% 16%, 82% 0%;
+    transform: translate3d(3%, 3%, 0) rotate(7deg) scale(1.07);
   }
 }
 
@@ -104,15 +92,6 @@ h6 {
   background: var(--primary);
 }
 
-@media (max-width: 640px) {
-  body {
-    background:
-      radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.88), transparent 22%),
-      radial-gradient(circle at 82% 14%, rgba(191, 219, 254, 0.62), transparent 26%),
-      linear-gradient(180deg, #f5f9ff 0%, #deeeff 48%, #d2e8ff 100%);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -123,22 +102,14 @@ h6 {
   }
 }
 
-/* 移动端关闭全屏模糊动画，降低持续重绘 */
+/* 移动端保留静态光斑，不做持续动画 */
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
-    transition: none;
   }
 
   body::before {
     animation: none;
-    filter: none;
-    opacity: 0.4;
-  }
-
-  body::after {
-    mix-blend-mode: normal;
-    opacity: 0.4;
   }
 }
 
@@ -149,19 +120,24 @@ h6 {
     --text-strong: #f1f5f9;
     --text-muted: #a3b1c6;
     --accent-text: #93c5fd;
-    --control-bg: rgba(30, 41, 59, 0.86);
+    --control-bg: rgba(30, 41, 59, 0.72);
     --control-border: rgba(148, 163, 184, 0.26);
     --control-active: rgba(59, 130, 246, 0.26);
+    --page-base: linear-gradient(180deg, #070c18 0%, #0c1224 52%, #0b1a2c 100%);
+    --orb-blue: rgba(37, 99, 235, 0.46);
+    --orb-violet: rgba(124, 58, 237, 0.38);
+    --orb-coral: rgba(225, 72, 110, 0.26);
+    --orb-mint: rgba(20, 184, 166, 0.28);
+    --orb-amber: rgba(217, 119, 6, 0.2);
   }
 
   body {
     color: #e2e8f0;
-    background: linear-gradient(180deg, #0b1220 0%, #0f172a 52%, #111c33 100%);
-    background-attachment: fixed;
   }
+}
 
-  body::before,
-  body::after {
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
     display: none;
   }
 }
