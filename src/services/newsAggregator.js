@@ -1,4 +1,4 @@
-import { ServerCache } from '@/lib/serverCache';
+import { createStaleWhileRevalidate } from '@/lib/staleWhileRevalidate';
 import { RSSAdapter } from './rssAdapter';
 import { RedditAdapter } from './redditAdapter';
 import { TwitterAdapter } from './twitterAdapter';
@@ -9,17 +9,14 @@ import { TWITTER_SOURCE, compareNewsItems, containsCjk, fetchWithTimeout } from 
 
 const translationCache = new Map();
 const MAX_TRANSLATION_CACHE_SIZE = 1000;
-const AGGREGATED_NEWS_CACHE_KEY = 'aggregated_all_news';
-const AGGREGATED_NEWS_TTL_SECONDS = 180; // 服务端聚合缓存 3 分钟
-const FORCE_REFRESH_COOLDOWN_MS = 60 * 1000;
+const NEWS_FRESH_MS = 3 * 60 * 1000; // 3 分钟内视为最新
+const NEWS_MAX_STALE_MS = 6 * 60 * 60 * 1000; // 6 小时内可先返回旧数据
+const REFRESH_COOLDOWN_MS = 60 * 1000;
 const MAX_TRANSLATED_ITEMS_PER_SOURCE = 15; // 与前端展示数 + 替补数保持一致
 const TRANSLATION_CONCURRENCY = 6;
 const TRANSLATION_REQUEST_TIMEOUT_MS = 3000;
 const TRANSLATION_BUDGET_MS = 8000;
 const NON_RSS_SOURCES = ['Reddit', TWITTER_SOURCE, '微博热搜', 'YouTube'];
-
-let inFlightAggregation = null;
-let lastSuccessfulRefreshAt = 0;
 
 /**
  * 写入翻译缓存并控制最大容量，防止长期运行内存无限增长
@@ -191,41 +188,20 @@ async function aggregateNews() {
         console.error('批量翻译服务异常:', error);
     }
 
-    const result = { items, unavailableSources };
-
-    if (items.length > 0) {
-        ServerCache.set(AGGREGATED_NEWS_CACHE_KEY, result, AGGREGATED_NEWS_TTL_SECONDS);
-        lastSuccessfulRefreshAt = Date.now();
-    }
-
-    return result;
+    return { items, unavailableSources };
 }
 
+const getAggregatedNews = createStaleWhileRevalidate({
+    load: aggregateNews,
+    isUsable: (result) => result?.items?.length > 0,
+    emptyValue: { items: [], unavailableSources: [] },
+    freshMs: NEWS_FRESH_MS,
+    maxStaleMs: NEWS_MAX_STALE_MS,
+    refreshCooldownMs: REFRESH_COOLDOWN_MS,
+});
+
 export const NewsAggregator = {
-    async fetchAllNews({ forceRefresh = false } = {}) {
-        // 强制刷新也受冷却时间限制，防止接口被反复触发全量抓取
-        const canBypassCache =
-            forceRefresh && Date.now() - lastSuccessfulRefreshAt >= FORCE_REFRESH_COOLDOWN_MS;
-
-        if (!canBypassCache) {
-            const cachedResult = ServerCache.get(AGGREGATED_NEWS_CACHE_KEY);
-            if (cachedResult?.items?.length > 0) {
-                return cachedResult;
-            }
-        }
-
-        // 并发请求共享同一次抓取
-        if (!inFlightAggregation) {
-            inFlightAggregation = aggregateNews()
-                .catch((error) => {
-                    console.error('NewsAggregator 聚合异常:', error);
-                    return { items: [], unavailableSources: [] };
-                })
-                .finally(() => {
-                    inFlightAggregation = null;
-                });
-        }
-
-        return inFlightAggregation;
+    fetchAllNews({ forceRefresh = false, runInBackground } = {}) {
+        return getAggregatedNews({ force: forceRefresh, runInBackground });
     },
 };

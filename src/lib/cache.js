@@ -15,15 +15,40 @@ export class APICache {
             const { data, timestamp, ttl = DEFAULT_CACHE_DURATION } = JSON.parse(cached);
             const age = Date.now() - timestamp;
 
-            if (age > ttl) {
-                localStorage.removeItem(cacheKey);
-                return null;
-            }
-
-            return data;
+            // 过期内容保留在本地，供离线和弱网时兜底
+            return age > ttl ? null : data;
         } catch (error) {
             console.error('[Cache] 读取缓存失败:', error);
             return null;
+        }
+    }
+
+    // 读取缓存内容及过期状态，过期内容同样返回
+    static getEntry(key) {
+        try {
+            const cached = localStorage.getItem(CACHE_PREFIX + key);
+            if (!cached) {
+                return null;
+            }
+
+            const { data, timestamp, ttl = DEFAULT_CACHE_DURATION } = JSON.parse(cached);
+            const age = Date.now() - timestamp;
+            return { data, age, expired: age > ttl };
+        } catch (error) {
+            console.error('[Cache] 读取缓存失败:', error);
+            return null;
+        }
+    }
+
+    // 清理同一前缀下的旧格式缓存
+    static pruneByPrefix(prefix, keepKey) {
+        try {
+            const keep = CACHE_PREFIX + keepKey;
+            Object.keys(localStorage)
+                .filter((key) => key.startsWith(CACHE_PREFIX + prefix) && key !== keep)
+                .forEach((key) => localStorage.removeItem(key));
+        } catch (error) {
+            console.error('[Cache] 清理旧缓存失败:', error);
         }
     }
 

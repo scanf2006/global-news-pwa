@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import test from 'node:test';
+import { createStaleWhileRevalidate } from '../src/lib/staleWhileRevalidate.js';
 import {
     dedupeNewsItems,
     mergeSimilarNewsItems,
@@ -119,4 +120,67 @@ test('fetchWithTimeout 覆盖响应体读取', async () => {
         server.closeAllConnections();
         server.close();
     }
+});
+
+function createLoader(load) {
+    const clock = { now: 0 };
+    const get = createStaleWhileRevalidate({
+        load,
+        isUsable: (value) => value?.items?.length > 0,
+        emptyValue: { items: [] },
+        freshMs: 100,
+        maxStaleMs: 1000,
+        refreshCooldownMs: 50,
+        now: () => clock.now,
+    });
+    return { clock, get };
+}
+
+test('SWR 过期后立即返回旧数据并在后台刷新', async () => {
+    let version = 0;
+    const { clock, get } = createLoader(async () => ({ items: [++version] }));
+    assert.deepEqual((await get()).items, [1]);
+
+    clock.now = 200;
+    let backgroundTask;
+    const stale = await get({ runInBackground: (task) => { backgroundTask = task; } });
+    assert.equal(stale.stale, true);
+    assert.deepEqual(stale.items, [1]);
+
+    await backgroundTask();
+    const fresh = await get();
+    assert.equal(fresh.stale, false);
+    assert.deepEqual(fresh.items, [2]);
+});
+
+test('SWR 刷新失败时保留最后一份有效数据', async () => {
+    let shouldFail = false;
+    const { clock, get } = createLoader(async () => {
+        if (shouldFail) {
+            throw new Error('offline');
+        }
+        return { items: ['good'] };
+    });
+    await get();
+
+    shouldFail = true;
+    clock.now = 200;
+    const result = await get({ force: true });
+    assert.equal(result.stale, true);
+    assert.deepEqual(result.items, ['good']);
+});
+
+test('SWR 合并并发加载，强制刷新受冷却限制', async () => {
+    let calls = 0;
+    const { clock, get } = createLoader(async () => ({ items: [++calls] }));
+    await Promise.all([get(), get(), get()]);
+    assert.equal(calls, 1);
+
+    clock.now = 10;
+    await get({ force: true });
+    assert.equal(calls, 1);
+
+    clock.now = 60;
+    await get({ force: true });
+    assert.equal(calls, 2);
 });

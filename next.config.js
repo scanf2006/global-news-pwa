@@ -71,6 +71,7 @@ const withPWA = nextPwa.default({
     disable: process.env.NODE_ENV === 'development',
     register: true,
     skipWaiting: true,
+    reloadOnOnline: false, // 网络恢复时由页面局部刷新，避免丢失阅读位置
     workboxOptions: {
         runtimeCaching: [
             // 新闻接口由服务端和 localStorage 管理缓存，避免 SW 超时后返回旧数据

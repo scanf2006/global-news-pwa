@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { NewsAggregator } from '@/services/newsAggregator';
 
 // 禁用静态路由缓存以保证实时获取新闻
@@ -9,7 +9,10 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const forceRefresh = searchParams.get('refresh') === '1';
 
-        const { items, unavailableSources } = await NewsAggregator.fetchAllNews({ forceRefresh });
+        const { items, unavailableSources, updatedAt, stale } = await NewsAggregator.fetchAllNews({
+            forceRefresh,
+            runInBackground: after,
+        });
 
         if (items.length === 0) {
             return NextResponse.json(
@@ -23,6 +26,8 @@ export async function GET(request) {
             count: items.length,
             data: items,
             unavailableSources,
+            updatedAt,
+            stale,
         });
     } catch (error) {
         console.error('[API] 获取新闻失败:', error);
