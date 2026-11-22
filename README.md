@@ -33,6 +33,10 @@ npm run start
 - `YOUTUBE_API_KEY`
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `NEXT_PUBLIC_APP_VERSION`
+- `CRON_SECRET`: 保护缓存预热和生产环境来源诊断接口
+- `UPSTASH_REDIS_REST_URL`、`UPSTASH_REDIS_REST_TOKEN`: 可选，启用跨实例共享缓存（也兼容 `KV_REST_API_URL`、`KV_REST_API_TOKEN`）
+- `GOOGLE_TRANSLATE_API_KEY`: 可选，启用 Google Cloud Translation 官方接口
+- `REDDIT_CLIENT_ID`、`REDDIT_CLIENT_SECRET`: 可选，启用 Reddit 官方 OAuth
 
 ## 结构说明
 
@@ -50,6 +54,8 @@ npm run start
 
 - 开发环境可访问 `/api/diagnostics`
 - 开发环境可访问 `/api/diagnostics/weibo`
+- `/api/diagnostics/sources` 查看各来源成功率和耗时，生产环境需携带 `Authorization: Bearer <CRON_SECRET>`
+- `/api/cron/refresh` 用于定时预热缓存，配置仓库变量 `NEWS_REFRESH_URL` 和密钥 `CRON_SECRET` 后由 GitHub Actions 每 15 分钟调用
 - 发布前至少执行一次 `npm run lint`、`npm test` 和 `npm run build`
 
 ## 依赖与安全说明

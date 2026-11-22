@@ -1,6 +1,13 @@
 :root {
+  color-scheme: light dark;
   --primary: #3b82f6;
   --secondary: #1e293b;
+  --text-strong: #0f172a;
+  --text-muted: #526176;
+  --accent-text: #1d4ed8;
+  --control-bg: rgba(255, 255, 255, 0.62);
+  --control-border: rgba(255, 255, 255, 0.78);
+  --control-active: rgba(255, 255, 255, 0.95);
 }
 
 * {
@@ -113,5 +120,48 @@ h6 {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* 移动端关闭全屏模糊动画，降低持续重绘 */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+    transition: none;
+  }
+
+  body::before {
+    animation: none;
+    filter: none;
+    opacity: 0.4;
+  }
+
+  body::after {
+    mix-blend-mode: normal;
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #60a5fa;
+    --secondary: #475569;
+    --text-strong: #f1f5f9;
+    --text-muted: #a3b1c6;
+    --accent-text: #93c5fd;
+    --control-bg: rgba(30, 41, 59, 0.86);
+    --control-border: rgba(148, 163, 184, 0.26);
+    --control-active: rgba(59, 130, 246, 0.26);
+  }
+
+  body {
+    color: #e2e8f0;
+    background: linear-gradient(180deg, #0b1220 0%, #0f172a 52%, #111c33 100%);
+    background-attachment: fixed;
+  }
+
+  body::before,
+  body::after {
+    display: none;
   }
 }

@@ -136,3 +136,33 @@
         font-size: 1.3rem;
     }
 }
+
+@media (max-width: 768px) {
+    .headerGlass {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .headerGlass,
+    .headerGlass:hover,
+    .headerGlass:focus-within {
+        background: rgba(15, 23, 42, 0.86);
+        border-color: rgba(148, 163, 184, 0.22);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+    }
+
+    .headerGlass::before,
+    .headerGlass::after {
+        opacity: 0.06;
+    }
+
+    .kicker {
+        color: #93c5fd;
+    }
+
+    .title {
+        color: #f1f5f9;
+    }
+}

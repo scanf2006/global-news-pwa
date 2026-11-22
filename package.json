@@ -1,6 +1,6 @@
 {
   "name": "global-news-pwa",
-  "version": "0.9.36",
+  "version": "0.10.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,14 +10,15 @@
     "test": "node --test tests/news.test.mjs"
   },
   "dependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
     "@sentry/nextjs": "^10.78.0",
+    "@serwist/next": "9.5.15",
     "cheerio": "^1.2.0",
     "google-translate-api-x": "^10.7.2",
     "next": "16.4.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "serwist": "9.5.15"
   },
   "devDependencies": {
     "eslint": "^9",

@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import test from 'node:test';
+import {
+    buildFeed,
+    countNewItems,
+    filterNews,
+    removeFromFeed,
+    restoreToFeed,
+} from '../src/lib/feedModel.js';
 import { createStaleWhileRevalidate } from '../src/lib/staleWhileRevalidate.js';
+import { computeHotScore, limitItemsPerSource, parseViewCount } from '../src/services/newsRanking.js';
+import { applySourceResults, updateSourceHealth } from '../src/services/newsSources.js';
+import { classifyTopic, getRegion } from '../src/services/newsTaxonomy.js';
 import {
     dedupeNewsItems,
     mergeSimilarNewsItems,
@@ -183,4 +193,74 @@ test('SWR 合并并发加载，强制刷新受冷却限制', async () => {
     clock.now = 60;
     await get({ force: true });
     assert.equal(calls, 2);
+});
+
+test('失败来源在保留期内沿用旧数据，超期后标记不可用', () => {
+    const previous = { BBC: { items: [{ id: 'old' }], fetchedAt: 0 } };
+    const retained = applySourceResults(previous, [{ source: 'BBC', items: [] }], 100, 1000);
+    assert.deepEqual(retained.staleSources, ['BBC']);
+    assert.equal(retained.snapshots.BBC.items[0].id, 'old');
+
+    const expired = applySourceResults(previous, [{ source: 'BBC', items: [] }], 2000, 1000);
+    assert.deepEqual(expired.unavailableSources, ['BBC']);
+});
+
+test('来源健康状态累计成功率', () => {
+    const first = updateSourceHealth({}, [{ source: 'A', items: [1], durationMs: 10 }], 100);
+    const second = updateSourceHealth(first, [{ source: 'A', items: [], durationMs: 20, error: 'x' }], 200);
+    assert.equal(second.A.successRate, 0.5);
+    assert.equal(second.A.lastSuccessAt, 100);
+    assert.equal(second.A.lastError, 'x');
+});
+
+test('热度解析与排序权重', () => {
+    assert.equal(parseViewCount('5.2M'), 5200000);
+    assert.equal(parseViewCount('3.4万'), 34000);
+    assert.equal(parseViewCount('Trending'), 0);
+
+    const now = Date.parse(FETCHED_AT);
+    const single = computeHotScore({ timestamp: FETCHED_AT, sourceList: ['A'] }, now);
+    const multi = computeHotScore({ timestamp: FETCHED_AT, sourceList: ['A', 'B'] }, now);
+    assert.ok(multi > single);
+    assert.equal(limitItemsPerSource([{ source: 'A' }, { source: 'A' }, { source: 'B' }], 1).length, 2);
+});
+
+test('翻译后合并只跨来源进行', () => {
+    const title = '多伦多市长宣布新的交通计划';
+    const options = { getTitle: (item) => item.titleTranslated, threshold: 0.6, crossSourceOnly: true };
+    const base = { timestamp: FETCHED_AT, titleTranslated: title };
+    assert.equal(mergeSimilarNewsItems([{ ...base, id: 'a', source: 'A' }, { ...base, id: 'b', source: 'B' }], options).length, 1);
+    assert.equal(mergeSimilarNewsItems([{ ...base, id: 'a', source: 'A' }, { ...base, id: 'c', source: 'A' }], options).length, 2);
+});
+
+test('地区和主题分类', () => {
+    assert.equal(getRegion('CP24'), '多伦多');
+    assert.equal(getRegion('微博热搜'), '中国');
+    assert.equal(classifyTopic('Raptors win in overtime'), '体育');
+    assert.equal(classifyTopic('Inflation slows in October'), '财经');
+    assert.equal(classifyTopic('Said it was fine'), '其他');
+});
+
+test('删除补位后可撤销', () => {
+    const items = Array.from({ length: 6 }, (_, index) => ({ id: String(index), source: 'A' }));
+    const feed = buildFeed(items);
+    const result = removeFromFeed(feed, '0', 'A');
+    assert.ok(result.feed.displayed.some((item) => item.id === '5'));
+
+    const restored = restoreToFeed(result.feed, result.removed, result.replacement);
+    assert.deepEqual(restored.displayed.map((item) => item.id).sort(), ['0', '1', '2', '3', '4']);
+    assert.deepEqual(restored.reserve.A.map((item) => item.id), ['5']);
+});
+
+test('筛选和新内容计数', () => {
+    const items = [
+        { id: '1', source: 'A', region: '全球', topic: '科技', titleTranslated: '芯片新闻', titleOriginal: 'Chip news' },
+        { id: '2', source: 'B', sourceList: ['B', 'C'], region: '中国', topic: '体育', titleTranslated: '足球', titleOriginal: '足球' },
+    ];
+    const filters = { query: '', source: '', region: '', topic: '' };
+    assert.equal(filterNews(items, { ...filters, query: 'chip' }).length, 1);
+    assert.equal(filterNews(items, { ...filters, source: 'C' })[0].id, '2');
+    assert.equal(filterNews([{ ...items[0], regions: ['全球', '多伦多'] }], { ...filters, region: '多伦多' }).length, 1);
+    assert.equal(countNewItems([items[0]], items), 1);
+    assert.equal(countNewItems([items[0]], items, ['2']), 0);
 });

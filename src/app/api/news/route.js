@@ -9,7 +9,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const forceRefresh = searchParams.get('refresh') === '1';
 
-        const { items, unavailableSources, updatedAt, stale } = await NewsAggregator.fetchAllNews({
+        const { items, unavailableSources, staleSources, updatedAt, stale } = await NewsAggregator.fetchAllNews({
             forceRefresh,
             runInBackground: after,
         });
@@ -26,6 +26,7 @@ export async function GET(request) {
             count: items.length,
             data: items,
             unavailableSources,
+            staleSources,
             updatedAt,
             stale,
         });

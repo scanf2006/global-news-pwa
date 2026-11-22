@@ -16,10 +16,11 @@ function getSourceChips(item) {
     return item?.source ? [item.source] : ['未知来源'];
 }
 
-export default function NewsCard({ item, onDelete }) {
+export default function NewsCard({ item, isRead, isSaved, onDelete, onToggleSaved, onRead }) {
     const [translateX, setTranslateX] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [showOriginal, setShowOriginal] = useState(false);
     const touchStart = useRef({ x: 0, y: 0 });
     const gestureAxis = useRef(null);
     const hasSwipedRef = useRef(false);
@@ -117,6 +118,9 @@ export default function NewsCard({ item, onDelete }) {
     const sourceChips = getSourceChips(item);
     const hasMergedSources = (item?.sourceList?.length || 0) > 1;
     const translatedTitle = item?.titleTranslated || item?.titleOriginal || '无标题';
+    const canShowOriginal =
+        Boolean(item?.titleOriginal) && item.titleOriginal !== item?.titleTranslated;
+    const displayTitle = showOriginal && canShowOriginal ? item.titleOriginal : translatedTitle;
 
     return (
         <div className={styles.cardWrapper}>
@@ -151,6 +155,16 @@ export default function NewsCard({ item, onDelete }) {
                             {item?.views && <span className={styles.views}>{item.views}</span>}
                             <button
                                 type="button"
+                                className={isSaved ? styles.saveButtonActive : styles.saveButton}
+                                onClick={onToggleSaved}
+                                aria-pressed={Boolean(isSaved)}
+                                aria-label={isSaved ? '取消收藏' : '收藏此条新闻'}
+                                title={isSaved ? '取消收藏' : '收藏'}
+                            >
+                                {isSaved ? '★' : '☆'}
+                            </button>
+                            <button
+                                type="button"
                                 className={styles.dismissButton}
                                 onClick={triggerDelete}
                                 aria-label="删除此条新闻"
@@ -162,17 +176,33 @@ export default function NewsCard({ item, onDelete }) {
                     </div>
 
                     <div className={styles.titleBlock}>
-                        <h3 className={styles.title}>
+                        <h3 className={isRead ? styles.titleRead : styles.title}>
                             <a
                                 href={item?.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className={styles.titleLink}
+                                onClick={onRead}
                             >
-                                {translatedTitle}
+                                {displayTitle}
                             </a>
                         </h3>
-                        {timeLabel && <span className={styles.titleTime}>{timeLabel}</span>}
+                        <div className={styles.titleMeta}>
+                            {timeLabel && <span className={styles.titleTime}>{timeLabel}</span>}
+                            {item?.topic && item.topic !== '其他' && (
+                                <span className={styles.titleTime}>{item.topic}</span>
+                            )}
+                            {canShowOriginal && (
+                                <button
+                                    type="button"
+                                    className={styles.originalButton}
+                                    aria-pressed={showOriginal}
+                                    onClick={() => setShowOriginal((value) => !value)}
+                                >
+                                    {showOriginal ? '看译文' : '看原文'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </article>

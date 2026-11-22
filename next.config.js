@@ -64,31 +64,20 @@ const nextConfig = {
     reactStrictMode: true,
 };
 
-const nextPwa = require('@ducanh2912/next-pwa');
+const { version } = require('./package.json');
 
-const withPWA = nextPwa.default({
-    dest: 'public',
+const withSerwist = require('@serwist/next').default({
+    swSrc: 'src/app/sw.js',
+    swDest: 'public/sw.js',
     disable: process.env.NODE_ENV === 'development',
-    register: true,
-    skipWaiting: true,
     reloadOnOnline: false, // 网络恢复时由页面局部刷新，避免丢失阅读位置
-    workboxOptions: {
-        runtimeCaching: [
-            // 新闻接口由服务端和 localStorage 管理缓存，避免 SW 超时后返回旧数据
-            {
-                urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname === '/api/news',
-                handler: 'NetworkOnly',
-                method: 'GET',
-            },
-            ...nextPwa.runtimeCaching,
-        ],
-    },
+    additionalPrecacheEntries: [{ url: '/', revision: version }],
 });
 
 const { withSentryConfig } = require('@sentry/nextjs');
 
 module.exports = withSentryConfig(
-    withPWA(nextConfig),
+    withSerwist(nextConfig),
     {
         silent: true,
         org: 'scanf2006',

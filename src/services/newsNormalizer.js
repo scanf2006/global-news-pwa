@@ -70,11 +70,28 @@ export function dedupeNewsItems(items) {
  * 合并 24 小时内标题高度相似的多源热点新闻
  * 保留首个主来源作为 item.source，全部来源记录在 sourceList 中
  */
-export function mergeSimilarNewsItems(items) {
+export function mergeSimilarNewsItems(
+    items,
+    {
+        getTitle = (item) => item.titleOriginal,
+        threshold = SIMILARITY_THRESHOLD,
+        crossSourceOnly = false,
+    } = {}
+) {
     const mergedItems = [];
 
     for (const item of items) {
+        const itemSources = item.sourceList || [item.source];
+        const itemTitle = getTitle(item);
         const matchingItem = mergedItems.find((existingItem) => {
+            if (
+                !itemTitle ||
+                (crossSourceOnly &&
+                    existingItem.sourceList.some((source) => itemSources.includes(source)))
+            ) {
+                return false;
+            }
+
             const timeDistance = Math.abs(
                 new Date(existingItem.timestamp) - new Date(item.timestamp)
             );
@@ -83,18 +100,17 @@ export function mergeSimilarNewsItems(items) {
             }
 
             return (
-                normalizeTitle(existingItem.titleOriginal) === normalizeTitle(item.titleOriginal) ||
-                calculateTokenSimilarity(existingItem.titleOriginal, item.titleOriginal) >=
-                    SIMILARITY_THRESHOLD
+                normalizeTitle(getTitle(existingItem)) === normalizeTitle(itemTitle) ||
+                calculateTokenSimilarity(getTitle(existingItem), itemTitle) >= threshold
             );
         });
 
         if (!matchingItem) {
-            mergedItems.push({ ...item, sourceList: [item.source] });
+            mergedItems.push({ ...item, sourceList: itemSources });
             continue;
         }
 
-        matchingItem.sourceList = Array.from(new Set([...matchingItem.sourceList, item.source]));
+        matchingItem.sourceList = Array.from(new Set([...matchingItem.sourceList, ...itemSources]));
 
         // 真实发布时间优先于热榜抓取时间
         if (

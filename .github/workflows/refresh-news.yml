@@ -1,0 +1,21 @@
+name: Refresh news cache
+
+# 配置仓库变量 NEWS_REFRESH_URL 和密钥 CRON_SECRET 后才会运行
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  refresh:
+    if: ${{ vars.NEWS_REFRESH_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger refresh
+        env:
+          NEWS_REFRESH_URL: ${{ vars.NEWS_REFRESH_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: curl --fail --silent --show-error --max-time 90 -H "Authorization: Bearer $CRON_SECRET" "$NEWS_REFRESH_URL"

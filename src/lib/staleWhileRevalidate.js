@@ -9,6 +9,8 @@ export function createStaleWhileRevalidate({
     freshMs,
     maxStaleMs,
     refreshCooldownMs,
+    readSnapshot,
+    writeSnapshot,
     now = Date.now,
 }) {
     let entry = null;
@@ -21,10 +23,11 @@ export function createStaleWhileRevalidate({
         if (!inFlight) {
             lastAttemptAt = now();
             inFlight = Promise.resolve()
-                .then(load)
-                .then((value) => {
+                .then(() => load(entry?.value))
+                .then(async (value) => {
                     if (isUsable(value)) {
                         entry = { value, updatedAt: now() };
+                        await writeSnapshot?.(entry);
                         return { ok: true, value };
                     }
                     return { ok: false, value };
@@ -41,7 +44,31 @@ export function createStaleWhileRevalidate({
         return inFlight;
     };
 
+    // 本实例没有最新数据时，尝试采用其他实例写入的共享快照
+    const adoptSnapshot = async () => {
+        if (!readSnapshot) {
+            return;
+        }
+
+        try {
+            const snapshot = await readSnapshot();
+            if (
+                isUsable(snapshot?.value) &&
+                Number.isFinite(snapshot.updatedAt) &&
+                (!entry || snapshot.updatedAt > entry.updatedAt)
+            ) {
+                entry = snapshot;
+            }
+        } catch (error) {
+            console.warn('[SWR] 读取共享快照失败:', error);
+        }
+    };
+
     return async function get({ force = false, runInBackground } = {}) {
+        if (!entry || now() - entry.updatedAt >= freshMs) {
+            await adoptSnapshot();
+        }
+
         const age = entry ? now() - entry.updatedAt : Infinity;
         const isFresh = age < freshMs;
         const canServeStale = age <= maxStaleMs;
