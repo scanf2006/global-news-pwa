@@ -1,19 +1,13 @@
 import Parser from 'rss-parser';
-import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
+import { generateStableId, isLikelyUsefulTitle } from './serviceUtils';
 
-// 初始化自定义超时抓取的 RSS 解析器
+// 初始化 RSS 解析器（rss-parser 内置请求，通过 timeout 与 headers 选项配置）
 const parser = new Parser({
-    customFetch: (url) =>
-        fetchWithTimeout(
-            url,
-            {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
-                },
-            },
-            8000
-        ),
+    timeout: 8000,
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+    },
 });
 
 // 全球及北美主流媒体 RSS 订阅源配置
@@ -31,6 +25,8 @@ const RSS_FEEDS = {
 };
 
 export const RSSAdapter = {
+    sourceNames: Object.keys(RSS_FEEDS),
+
     // 抓取单个 RSS 源的热门新闻
     async fetchTrending(sourceName) {
         const feedUrl = RSS_FEEDS[sourceName];

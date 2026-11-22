@@ -3,45 +3,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import packageJson from '../../package.json';
 import { APICache } from '@/lib/cache';
-import { containsCjk, formatRelativeAge } from '@/services/serviceUtils';
+import { formatRelativeAge } from '@/services/serviceUtils';
 import NewsCard from './NewsCard';
 import styles from './NewsFeed.module.css';
 
 const DISPLAY_COUNT_PER_SOURCE = 5;
 const RESERVE_COUNT_PER_SOURCE = 10;
 const MAX_DELETED_IDS = 200;
-const NEWS_CACHE_KEY = `news_v2_${packageJson.version}`;
+const NEWS_CACHE_KEY = `news_v3_${packageJson.version}`;
 const DELETED_IDS_KEY = 'deletedNewsIds';
 const WEIBO_SOURCE = '微博热搜';
+const STALE_CHECK_INTERVAL_MS = 60 * 1000;
 
 // 按发布时间倒序排列新闻
 function sortByTimestamp(items) {
     return [...items].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
 
-// 检查英文新闻是否缺失中文翻译
-function hasMissingEnglishTranslation(item) {
-    const original = String(item?.titleOriginal || '').trim();
-    const translated = String(item?.titleTranslated || '').trim();
-
-    if (!original || containsCjk(original)) {
-        return false;
-    }
-
-    if (!translated) {
-        return true;
-    }
-
-    return translated === original;
-}
-
-// 验证本地缓存中的新闻列表是否完整可用
-function isUsableCachedNews(items) {
-    if (!Array.isArray(items) || items.length === 0) {
-        return false;
-    }
-
-    return !items.some(hasMissingEnglishTranslation);
+// 验证本地缓存结构是否可用（个别标题未翻译时仍可展示原文）
+function isUsableCachedNews(cached) {
+    return Array.isArray(cached?.items) && cached.items.length > 0;
 }
 
 // 安全读取本地存储中的已删除 ID 列表
@@ -55,21 +36,20 @@ function readDeletedIds() {
 }
 
 export default function NewsFeed() {
-    const [displayedNews, setDisplayedNews] = useState([]);
-    const [reservePool, setReservePool] = useState({});
-    const [deletedIds, setDeletedIds] = useState([]);
+    // 展示列表与替补池放在同一状态中，保证删除补位是一次原子更新
+    const [feed, setFeed] = useState({ displayed: [], reserve: {} });
+    const [unavailableSources, setUnavailableSources] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [cacheStatus, setCacheStatus] = useState(null);
     const pullStartY = useRef(null);
+    const latestRequestId = useRef(0);
+    const displayedNews = feed.displayed;
 
     // 根据新闻源分组初始化展示列表与替补池
     const initializeNewsLists = useCallback((newsData) => {
-        const storedDeletedIds = readDeletedIds();
-        setDeletedIds(storedDeletedIds);
-
-        const deletedSet = new Set(storedDeletedIds);
+        const deletedSet = new Set(readDeletedIds());
         const groups = {};
 
         newsData.forEach((item) => {
@@ -105,21 +85,23 @@ export default function NewsFeed() {
             nextReservePool[source] = toReserve;
         });
 
-        setDisplayedNews(sortByTimestamp(initialDisplay));
-        setReservePool(nextReservePool);
+        setFeed({ displayed: sortByTimestamp(initialDisplay), reserve: nextReservePool });
     }, []);
 
-    // 拉取新闻数据（支持优先读取缓存或强制刷新）
+    // 拉取新闻：cache 优先读本地缓存，network 走服务端缓存，force 请求服务端重新抓取
     const fetchNews = useCallback(
-        async (forceRefresh = false) => {
+        async (mode = 'cache') => {
+            const requestId = latestRequestId.current + 1;
+            latestRequestId.current = requestId;
             setLoading(true);
             setErrorMessage('');
 
             try {
-                if (!forceRefresh) {
+                if (mode === 'cache') {
                     const cached = APICache.get(NEWS_CACHE_KEY);
                     if (isUsableCachedNews(cached)) {
-                        initializeNewsLists(cached);
+                        initializeNewsLists(cached.items);
+                        setUnavailableSources(cached.unavailableSources || []);
                         const cacheInfo = APICache.getInfo(NEWS_CACHE_KEY);
                         if (cacheInfo) {
                             setCacheStatus({
@@ -136,7 +118,7 @@ export default function NewsFeed() {
                     }
                 }
 
-                const endpoint = forceRefresh ? '/api/news?refresh=1' : '/api/news';
+                const endpoint = mode === 'force' ? '/api/news?refresh=1' : '/api/news';
                 const response = await fetch(endpoint);
                 if (!response.ok) {
                     throw new Error(`请求失败 (${response.status})`);
@@ -144,9 +126,19 @@ export default function NewsFeed() {
 
                 const data = await response.json();
 
-                if (data.success && Array.isArray(data.data)) {
+                // 已有更新的请求发出时，丢弃这次过期响应
+                if (requestId !== latestRequestId.current) {
+                    return;
+                }
+
+                if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+                    const nextUnavailableSources = data.unavailableSources || [];
                     initializeNewsLists(data.data);
-                    APICache.set(NEWS_CACHE_KEY, data.data);
+                    setUnavailableSources(nextUnavailableSources);
+                    APICache.set(NEWS_CACHE_KEY, {
+                        items: data.data,
+                        unavailableSources: nextUnavailableSources,
+                    });
                     setCacheStatus({
                         fromCache: false,
                         age: 0,
@@ -156,11 +148,15 @@ export default function NewsFeed() {
                     throw new Error(data.error || '返回数据格式异常');
                 }
             } catch (error) {
-                console.error('获取新闻失败:', error);
-                setErrorMessage('刷新失败，已为您保留当前内容');
+                if (requestId === latestRequestId.current) {
+                    console.error('获取新闻失败:', error);
+                    setErrorMessage('刷新失败，已为您保留当前内容');
+                }
             } finally {
-                setLoading(false);
-                setIsRefreshing(false);
+                if (requestId === latestRequestId.current) {
+                    setLoading(false);
+                    setIsRefreshing(false);
+                }
             }
         },
         [initializeNewsLists]
@@ -168,39 +164,64 @@ export default function NewsFeed() {
 
     // 删除指定卡片并从同源替补池补充一条新闻
     const handleDeleteCard = (cardId, source) => {
-        const nextDeletedIds = [...deletedIds.filter((id) => id !== cardId), cardId].slice(
+        // 每次从 localStorage 读取最新列表，避免延迟回调拿到旧状态
+        const nextDeletedIds = [...readDeletedIds().filter((id) => id !== cardId), cardId].slice(
             -MAX_DELETED_IDS
         );
-        setDeletedIds(nextDeletedIds);
-        localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(nextDeletedIds));
-
-        const nextReservePoolState = { ...reservePool };
-        const currentSourceReserve = nextReservePoolState[source] || [];
-        const replacementItem = currentSourceReserve[0] || null;
-
-        if (replacementItem) {
-            nextReservePoolState[source] = currentSourceReserve.slice(1);
-            setReservePool(nextReservePoolState);
+        try {
+            localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(nextDeletedIds));
+        } catch (error) {
+            console.error('保存删除记录失败:', error);
         }
 
-        setDisplayedNews((previous) => {
-            const filtered = previous.filter((item) => item.id !== cardId);
-            return replacementItem ? sortByTimestamp([...filtered, replacementItem]) : filtered;
+        setFeed((previous) => {
+            if (!previous.displayed.some((item) => item.id === cardId)) {
+                return previous;
+            }
+
+            const remaining = previous.displayed.filter((item) => item.id !== cardId);
+            const [replacementItem, ...restReserve] = previous.reserve[source] || [];
+
+            if (!replacementItem) {
+                return { ...previous, displayed: remaining };
+            }
+
+            return {
+                displayed: sortByTimestamp([...remaining, replacementItem]),
+                reserve: { ...previous.reserve, [source]: restReserve },
+            };
         });
     };
 
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
-        fetchNews(true);
+        fetchNews('force');
     }, [fetchNews]);
 
     useEffect(() => {
-        fetchNews();
-        const interval = setInterval(() => {
-            fetchNews(true);
-        }, 10 * 60 * 1000);
+        // 推迟到 effect 之后执行，避免同步 setState 引发级联渲染
+        const initialLoad = setTimeout(() => fetchNews(), 0);
 
-        return () => clearInterval(interval);
+        // 仅在页面可见且本地缓存过期时刷新，普通刷新复用服务端缓存
+        const refreshIfStale = () => {
+            if (document.hidden) {
+                return;
+            }
+
+            const cacheInfo = APICache.getInfo(NEWS_CACHE_KEY);
+            if (!cacheInfo || cacheInfo.expired) {
+                fetchNews('network');
+            }
+        };
+
+        const interval = setInterval(refreshIfStale, STALE_CHECK_INTERVAL_MS);
+        document.addEventListener('visibilitychange', refreshIfStale);
+
+        return () => {
+            clearTimeout(initialLoad);
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', refreshIfStale);
+        };
     }, [fetchNews]);
 
     const handleTouchStart = (event) => {
@@ -240,6 +261,11 @@ export default function NewsFeed() {
             {!isRefreshing && errorMessage && (
                 <div className={styles.refreshState} role="status">
                     {errorMessage}
+                </div>
+            )}
+            {unavailableSources.length > 0 && (
+                <div className={styles.refreshState} role="status">
+                    暂不可用：{unavailableSources.join('、')}
                 </div>
             )}
 

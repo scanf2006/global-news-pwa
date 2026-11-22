@@ -162,8 +162,8 @@ export const WeiboAdapter = {
             console.error('[WeiboAdapter] 循环抓取异常:', error);
         }
 
-        // 所有源均不可用时返回兜底数据
-        return getFallbackData();
+        // 所有源均不可用时返回空列表，由聚合层标记该来源暂不可用
+        return [];
     },
 };
 
@@ -192,29 +192,4 @@ function parseViews(hot) {
     if (!hot) return 0;
     if (typeof hot === 'number') return hot;
     return parseInt(hot, 10) || 0;
-}
-
-// 获取兜底模拟数据
-function getFallbackData() {
-    return [
-        '春节档电影票房创新高',
-        '多地气温回升迎来春天',
-        '科技公司发布新产品',
-        '体育赛事精彩瞬间',
-        '明星动态引发热议',
-        '社会热点事件关注',
-        '经济数据发布',
-        '文化活动精彩纷呈',
-        '教育改革新政策',
-        '健康生活小贴士',
-    ].map((topic, index) => ({
-        id: generateStableId('weibo-fallback', topic),
-        title: topic,
-        url: `https://s.weibo.com/weibo?q=${encodeURIComponent(topic)}`,
-        source: '微博热搜',
-        rank: index + 1,
-        views: 0,
-        titleOriginal: topic,
-        timestamp: new Date().toISOString(),
-    }));
 }

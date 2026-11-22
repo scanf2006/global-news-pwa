@@ -1,5 +1,12 @@
 import * as cheerio from 'cheerio';
-import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
+import {
+    TWITTER_SOURCE,
+    fetchWithTimeout,
+    generateStableId,
+    isLikelyUsefulTitle,
+} from './serviceUtils';
+
+const MAX_TRENDS = 20;
 
 // X (Twitter) 趋势数据源列表（按优先级排列）
 const SOURCES = [
@@ -32,7 +39,7 @@ export const TwitterAdapter = {
 
                     if (url.includes('getdaytrends.com')) {
                         $('table tbody tr').each((index, element) => {
-                            if (index >= 20) {
+                            if (trends.length >= MAX_TRENDS) {
                                 return false;
                             }
 
@@ -40,10 +47,10 @@ export const TwitterAdapter = {
                             const title = link.text().trim();
                             const countText = $(element).find('.small.text-muted').text().trim();
 
-                            if (isLikelyUsefulTitle(title)) {
+                            if (isLikelyUsefulTitle(title, TWITTER_SOURCE)) {
                                 trends.push({
                                     id: generateStableId('twitter', title),
-                                    source: 'X (Twitter)',
+                                    source: TWITTER_SOURCE,
                                     titleOriginal: title,
                                     titleTranslated: null,
                                     url: `https://twitter.com/search?q=${encodeURIComponent(title)}`,
@@ -55,15 +62,15 @@ export const TwitterAdapter = {
                         });
                     } else {
                         $('.cw-list-item').each((index, element) => {
-                            if (index >= 20) {
+                            if (trends.length >= MAX_TRENDS) {
                                 return false;
                             }
 
                             const title = $(element).find('.cw-list-name').text().trim();
-                            if (isLikelyUsefulTitle(title)) {
+                            if (isLikelyUsefulTitle(title, TWITTER_SOURCE)) {
                                 trends.push({
                                     id: generateStableId('twitter', title),
-                                    source: 'X (Twitter)',
+                                    source: TWITTER_SOURCE,
                                     titleOriginal: title,
                                     titleTranslated: null,
                                     url: `https://twitter.com/search?q=${encodeURIComponent(title)}`,

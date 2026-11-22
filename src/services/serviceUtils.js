@@ -1,4 +1,8 @@
 const DEFAULT_TIMEOUT_MS = 8000;
+const MIN_FUZZY_MATCH_TOKENS = 3;
+const MIN_ORDER_AGREEMENT = 0.6;
+
+export const TWITTER_SOURCE = 'X (Twitter)';
 
 /**
  * 带超时控制的 fetch 请求封装
@@ -8,9 +12,19 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_TI
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-        return await fetch(url, {
+        const response = await fetch(url, {
             ...options,
             signal: controller.signal,
+        });
+
+        // 在超时窗口内读完响应体，避免响应头返回后请求仍然无限挂起
+        const hasNoBody = [101, 204, 205, 304].includes(response.status);
+        const body = hasNoBody ? null : await response.arrayBuffer();
+
+        return new Response(body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
         });
     } finally {
         clearTimeout(timeoutId);
@@ -65,23 +79,18 @@ export function tokenizeTitle(title) {
     }
 
     const tokens = [];
-    // 提取非中文单词（长度 >= 3）
-    const wordMatches = normalized.match(/[a-z0-9]{3,}/g);
-    if (wordMatches) {
-        tokens.push(...wordMatches);
-    }
+    // 按原文顺序提取英文单词（长度 >= 3）、完整数字和中文片段
+    const segments = normalized.match(/[a-z]{3,}|\d+|[\u3400-\u9fff]+/g) || [];
 
-    // 提取中文字符片段并生成二元组（Bigrams）
-    const cjkSegments = normalized.match(/[\u3400-\u9fff]+/g);
-    if (cjkSegments) {
-        for (const segment of cjkSegments) {
-            if (segment.length <= 2) {
-                tokens.push(segment);
-            } else {
-                for (let i = 0; i < segment.length - 1; i += 1) {
-                    tokens.push(segment.slice(i, i + 2));
-                }
-            }
+    for (const segment of segments) {
+        if (!containsCjk(segment) || segment.length <= 2) {
+            tokens.push(segment);
+            continue;
+        }
+
+        // 中文片段生成二元组（Bigrams）
+        for (let i = 0; i < segment.length - 1; i += 1) {
+            tokens.push(segment.slice(i, i + 2));
         }
     }
 
@@ -89,15 +98,15 @@ export function tokenizeTitle(title) {
 }
 
 /**
- * 判断标题是否为有效新闻标题（针对中文短标题放宽长度阈值）
+ * 判断标题是否为有效新闻标题（中文和 X 趋势词通常较短，使用更低阈值）
  */
-export function isLikelyUsefulTitle(title) {
+export function isLikelyUsefulTitle(title, source) {
     const normalized = normalizeTitle(title);
     if (!normalized) {
         return false;
     }
 
-    if (containsCjk(normalized)) {
+    if (containsCjk(normalized) || source === TWITTER_SOURCE) {
         return normalized.length >= 2;
     }
 
@@ -105,24 +114,60 @@ export function isLikelyUsefulTitle(title) {
 }
 
 /**
- * 计算两个标题之间的 Token 重叠相似度
+ * 计算共同 Token 在两个标题中保持相同先后顺序的比例
  */
-export function calculateTokenSimilarity(titleA, titleB) {
-    const tokensA = new Set(tokenizeTitle(titleA));
-    const tokensB = new Set(tokenizeTitle(titleB));
-
-    if (tokensA.size === 0 || tokensB.size === 0) {
-        return 0;
+function calculateOrderAgreement(tokensA, tokensB, sharedTokens) {
+    if (sharedTokens.length < 2) {
+        return 1;
     }
 
-    let overlap = 0;
-    for (const token of tokensA) {
-        if (tokensB.has(token)) {
-            overlap += 1;
+    let samePairs = 0;
+    let totalPairs = 0;
+
+    for (let i = 0; i < sharedTokens.length; i += 1) {
+        for (let j = i + 1; j < sharedTokens.length; j += 1) {
+            const orderA = tokensA.indexOf(sharedTokens[i]) - tokensA.indexOf(sharedTokens[j]);
+            const orderB = tokensB.indexOf(sharedTokens[i]) - tokensB.indexOf(sharedTokens[j]);
+            totalPairs += 1;
+            if (Math.sign(orderA) === Math.sign(orderB)) {
+                samePairs += 1;
+            }
         }
     }
 
-    return overlap / Math.max(tokensA.size, tokensB.size);
+    return samePairs / totalPairs;
+}
+
+/**
+ * 计算两个标题之间的相似度。
+ * 数字不同、词序明显相反或 Token 过少时视为不同事件，宁可少合并也不误合并。
+ */
+export function calculateTokenSimilarity(titleA, titleB) {
+    const orderedA = tokenizeTitle(titleA);
+    const orderedB = tokenizeTitle(titleB);
+    const tokensA = new Set(orderedA);
+    const tokensB = new Set(orderedB);
+
+    if (Math.min(tokensA.size, tokensB.size) < MIN_FUZZY_MATCH_TOKENS) {
+        return 0;
+    }
+
+    const numbersA = [...tokensA].filter((token) => /^\d+$/.test(token));
+    const numbersB = [...tokensB].filter((token) => /^\d+$/.test(token));
+    if (
+        numbersA.length > 0 &&
+        numbersB.length > 0 &&
+        (numbersA.length !== numbersB.length || numbersA.some((token) => !tokensB.has(token)))
+    ) {
+        return 0;
+    }
+
+    const sharedTokens = [...tokensA].filter((token) => tokensB.has(token));
+    if (calculateOrderAgreement(orderedA, orderedB, sharedTokens) < MIN_ORDER_AGREEMENT) {
+        return 0;
+    }
+
+    return sharedTokens.length / Math.max(tokensA.size, tokensB.size);
 }
 
 /**

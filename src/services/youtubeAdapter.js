@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
+import { fetchWithTimeout, isLikelyUsefulTitle } from './serviceUtils';
 
 // YouTube 热门视频适配器
 export const YouTubeAdapter = {
@@ -8,7 +8,7 @@ export const YouTubeAdapter = {
             const apiKey = process.env.YOUTUBE_API_KEY || '';
 
             if (!apiKey) {
-                return this.getFallbackVideos();
+                return [];
             }
 
             const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=20&key=${apiKey}`;
@@ -38,13 +38,13 @@ export const YouTubeAdapter = {
                     },
                 });
 
-                return this.getFallbackVideos();
+                return [];
             }
 
             const data = await response.json();
             if (!data.items?.length) {
                 console.error('[YouTube] 未返回任何视频条目');
-                return this.getFallbackVideos();
+                return [];
             }
 
             return data.items
@@ -72,7 +72,7 @@ export const YouTubeAdapter = {
                 },
             });
 
-            return this.getFallbackVideos();
+            return [];
         }
     },
 
@@ -87,63 +87,5 @@ export const YouTubeAdapter = {
             return `${(count / 1000).toFixed(1)}K`;
         }
         return count.toString();
-    },
-
-    // 当未配置 API Key 或请求失败时使用的兜底数据
-    getFallbackVideos() {
-        const now = new Date().toISOString();
-
-        return [
-            {
-                id: generateStableId('youtube-fallback', 'Top Tech Reviews & Unboxing Videos'),
-                source: 'YouTube',
-                titleOriginal: 'Top Tech Reviews & Unboxing Videos',
-                titleTranslated: null,
-                url: 'https://www.youtube.com/results?search_query=tech+review',
-                timestamp: now,
-                views: '5.2M',
-                thumbnail: null,
-            },
-            {
-                id: generateStableId('youtube-fallback', 'Latest Gaming Highlights & Walkthroughs'),
-                source: 'YouTube',
-                titleOriginal: 'Latest Gaming Highlights & Walkthroughs',
-                titleTranslated: null,
-                url: 'https://www.youtube.com/gaming',
-                timestamp: now,
-                views: '3.8M',
-                thumbnail: null,
-            },
-            {
-                id: generateStableId('youtube-fallback', 'Trending Music Videos & Performances'),
-                source: 'YouTube',
-                titleOriginal: 'Trending Music Videos & Performances',
-                titleTranslated: null,
-                url: 'https://www.youtube.com/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ',
-                timestamp: now,
-                views: '4.5M',
-                thumbnail: null,
-            },
-            {
-                id: generateStableId('youtube-fallback', 'Breaking News & Current Events'),
-                source: 'YouTube',
-                titleOriginal: 'Breaking News & Current Events',
-                titleTranslated: null,
-                url: 'https://www.youtube.com/results?search_query=breaking+news',
-                timestamp: now,
-                views: '2.1M',
-                thumbnail: null,
-            },
-            {
-                id: generateStableId('youtube-fallback', 'Popular Entertainment & Comedy'),
-                source: 'YouTube',
-                titleOriginal: 'Popular Entertainment & Comedy',
-                titleTranslated: null,
-                url: 'https://www.youtube.com/feed/trending',
-                timestamp: now,
-                views: '6.3M',
-                thumbnail: null,
-            },
-        ];
     },
 };

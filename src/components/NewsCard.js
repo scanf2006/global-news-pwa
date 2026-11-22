@@ -32,7 +32,7 @@ export default function NewsCard({ item, onDelete }) {
         setTranslateX(-500);
 
         setTimeout(() => {
-            onDelete(item.id);
+            onDelete();
         }, 300);
     };
 

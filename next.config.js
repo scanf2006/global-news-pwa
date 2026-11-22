@@ -33,11 +33,24 @@ const nextConfig = {
     reactStrictMode: true,
 };
 
-const withPWA = require('@ducanh2912/next-pwa').default({
+const nextPwa = require('@ducanh2912/next-pwa');
+
+const withPWA = nextPwa.default({
     dest: 'public',
     disable: process.env.NODE_ENV === 'development',
     register: true,
     skipWaiting: true,
+    workboxOptions: {
+        runtimeCaching: [
+            // 新闻接口由服务端和 localStorage 管理缓存，避免 SW 超时后返回旧数据
+            {
+                urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname === '/api/news',
+                handler: 'NetworkOnly',
+                method: 'GET',
+            },
+            ...nextPwa.runtimeCaching,
+        ],
+    },
 });
 
 const { withSentryConfig } = require('@sentry/nextjs');

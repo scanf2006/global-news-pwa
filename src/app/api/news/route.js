@@ -9,9 +9,23 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const forceRefresh = searchParams.get('refresh') === '1';
 
-        const news = await NewsAggregator.fetchAllNews({ forceRefresh });
-        return NextResponse.json({ success: true, count: news.length, data: news });
+        const { items, unavailableSources } = await NewsAggregator.fetchAllNews({ forceRefresh });
+
+        if (items.length === 0) {
+            return NextResponse.json(
+                { success: false, error: '所有新闻源暂不可用', unavailableSources },
+                { status: 503 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            count: items.length,
+            data: items,
+            unavailableSources,
+        });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        console.error('[API] 获取新闻失败:', error);
+        return NextResponse.json({ success: false, error: '获取新闻失败' }, { status: 500 });
     }
 }
