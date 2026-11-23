@@ -5,7 +5,7 @@ const TORONTO_SOURCES = new Set(['CBC Toronto', 'Global News', 'Toronto Star', '
 const CANADA_SOURCES = new Set(['Globe and Mail']);
 const CHINA_SOURCES = new Set(['微博热搜', 'IT之家']);
 // 标题没有命中关键词时，专业媒体使用其默认主题
-const SOURCE_TOPICS = { 'IT之家': '科技', 'The Verge': '科技', CNBC: '财经' };
+const SOURCE_TOPICS = { 'IT之家': '科技', 'The Verge': '科技', 'Hacker News': '科技', CNBC: '财经' };
 
 // 按优先级匹配，英文关键词使用完整单词
 const TOPIC_KEYWORDS = [

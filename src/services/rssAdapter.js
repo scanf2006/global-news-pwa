@@ -21,7 +21,7 @@ function waitForGoogleNewsTurn() {
     return turn;
 }
 
-async function fetchFeed(feedUrl) {
+export async function fetchFeed(feedUrl) {
     const isGoogleNews = feedUrl.includes('news.google.com');
 
     for (let attempt = 0; ; attempt += 1) {

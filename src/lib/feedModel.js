@@ -25,6 +25,7 @@ const SUPPLEMENTAL_SOURCES = new Set([
     'IT之家',
     'CNBC',
     'The Verge',
+    'Hacker News',
 ]);
 
 export function getDisplayCount(source) {

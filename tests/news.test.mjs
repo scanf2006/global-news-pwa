@@ -11,7 +11,7 @@ import {
 } from '../src/lib/feedModel.js';
 import { createStaleWhileRevalidate } from '../src/lib/staleWhileRevalidate.js';
 import { computeHotScore, limitItemsPerSource, parseViewCount } from '../src/services/newsRanking.js';
-import { applySourceResults, updateSourceHealth } from '../src/services/newsSources.js';
+import { applySourceResults, selectChannelVideos, updateSourceHealth } from '../src/services/newsSources.js';
 import { classifyItemTopic, classifyTopic, getRegion, getRegions } from '../src/services/newsTaxonomy.js';
 import {
     dedupeNewsItems,
@@ -249,6 +249,24 @@ test('新增来源的地区和默认主题', () => {
     assert.equal(classifyItemTopic({ source: 'The Verge', titleOriginal: 'Said it was fine' }), '科技');
     assert.equal(classifyItemTopic({ source: 'CNBC', titleOriginal: 'Raptors win in overtime' }), '体育');
     assert.equal(classifyItemTopic({ source: 'DW', titleOriginal: 'Said it was fine' }), '其他');
+});
+
+test('频道视频排除 Shorts 并取最新条目', () => {
+    const video = (id, isoDate, path = 'watch?v=') => ({
+        id: `yt:video:${id}`,
+        link: `https://www.youtube.com/${path}${id}`,
+        isoDate,
+    });
+    const selected = selectChannelVideos(
+        [
+            video('old', '2026-11-20T00:00:00.000Z'),
+            video('short', '2026-11-22T00:00:00.000Z', 'shorts/'),
+            video('new', '2026-11-21T12:00:00.000Z'),
+            video('mid', '2026-11-21T00:00:00.000Z'),
+        ],
+        2
+    );
+    assert.deepEqual(selected.map((entry) => entry.id), ['yt:video:new', 'yt:video:mid']);
 });
 
 test('补充来源使用较低的展示和候选配额', () => {

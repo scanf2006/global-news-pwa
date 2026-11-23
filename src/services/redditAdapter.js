@@ -44,21 +44,26 @@ async function getAccessToken() {
     return cachedToken.value;
 }
 
-// Reddit 热门帖子适配器：配置凭据时走官方 OAuth，否则尝试公开接口
+// Reddit 热门帖子适配器：公开接口已被封锁，只在配置官方凭据后启用
 export const RedditAdapter = {
+    isConfigured() {
+        return Boolean(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET);
+    },
+
     async fetchTrending() {
         try {
             const token = await getAccessToken();
-            const url = token
-                ? 'https://oauth.reddit.com/r/popular?limit=20&raw_json=1'
-                : 'https://www.reddit.com/r/popular.json?limit=20&raw_json=1';
+            if (!token) {
+                return [];
+            }
+
             const response = await fetchWithTimeout(
-                url,
+                'https://oauth.reddit.com/r/popular?limit=20&raw_json=1',
                 {
                     headers: {
                         'User-Agent': USER_AGENT,
                         Accept: 'application/json',
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        Authorization: `Bearer ${token}`,
                     },
                 },
                 8000

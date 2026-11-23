@@ -52,6 +52,18 @@ export function updateSourceHealth(previous = {}, results, now) {
 }
 
 /**
+ * 选出频道最新的常规视频，排除 Shorts
+ */
+export function selectChannelVideos(entries, limit) {
+    const getTime = (entry) => new Date(entry.isoDate || entry.pubDate || 0).getTime() || 0;
+
+    return entries
+        .filter((entry) => entry.id && entry.link && !entry.link.includes('/shorts/'))
+        .sort((a, b) => getTime(b) - getTime(a))
+        .slice(0, limit);
+}
+
+/**
  * 为异步任务设置最长等待时间
  */
 export function withDeadline(promise, timeoutMs, message = '来源抓取超时') {

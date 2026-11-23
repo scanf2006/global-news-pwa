@@ -1,6 +1,7 @@
 import { getCandidateCount } from '@/lib/feedModel';
 import { readShared, writeShared } from '@/lib/sharedStore';
 import { createStaleWhileRevalidate } from '@/lib/staleWhileRevalidate';
+import { HackerNewsAdapter } from './hackerNewsAdapter';
 import { limitItemsPerSource, rankNewsItems } from './newsRanking';
 import { dedupeNewsItems, mergeSimilarNewsItems, normalizeNewsItems } from './newsNormalizer';
 import { applySourceResults, updateSourceHealth, withDeadline } from './newsSources';
@@ -28,7 +29,10 @@ function getSourceTasks() {
             source,
             load: () => RSSAdapter.fetchTrending(source),
         })),
-        { source: 'Reddit', load: () => RedditAdapter.fetchTrending() },
+        ...(RedditAdapter.isConfigured()
+            ? [{ source: 'Reddit', load: () => RedditAdapter.fetchTrending() }]
+            : []),
+        { source: 'Hacker News', load: () => HackerNewsAdapter.fetchTrending() },
         { source: TWITTER_SOURCE, load: () => TwitterAdapter.fetchTrending() },
         { source: '微博热搜', load: () => WeiboAdapter.fetchHotSearch() },
         { source: 'YouTube', load: () => YouTubeAdapter.fetchTrending() },

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { YouTubeAdapter } from '@/services/youtubeAdapter';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,36 +11,16 @@ export async function GET() {
         );
     }
 
-    const apiKey = process.env.YOUTUBE_API_KEY || '';
     const diagnostics = {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        youtubeApiKey: {
-            exists: !!apiKey,
-            length: apiKey.length,
-            preview: apiKey ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 'NOT FOUND',
-            startsWithAIza: apiKey.startsWith('AIza'),
-        },
     };
 
-    if (apiKey) {
-        try {
-            const url = 'https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=US&maxResults=1';
-            const response = await fetch(url, { headers: { 'X-Goog-Api-Key': apiKey } });
-            const data = await response.json();
-
-            diagnostics.apiTest = {
-                status: response.status,
-                ok: response.ok,
-                hasItems: !!data.items,
-                itemCount: data.items?.length || 0,
-                error: data.error || null,
-            };
-        } catch (error) {
-            diagnostics.apiTest = {
-                error: error.message,
-            };
-        }
+    try {
+        const videos = await YouTubeAdapter.fetchTrending();
+        diagnostics.youtubeFeeds = { ok: videos.length > 0, itemCount: videos.length };
+    } catch (error) {
+        diagnostics.youtubeFeeds = { ok: false, error: error.message };
     }
 
     return NextResponse.json(diagnostics);
