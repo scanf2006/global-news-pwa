@@ -7,6 +7,33 @@ export const DEFAULT_FILTERS = { query: '', source: '', region: '', topic: '' };
 
 const WEIBO_SOURCE = '微博热搜';
 const WEIBO_PINNED_COUNT = 3;
+const CORE_CANDIDATE_COUNT = 18; // 展示 5 条 + 替补 10 条 + 微博跳过的 3 条
+const SUPPLEMENTAL_DISPLAY_COUNT = 3;
+const SUPPLEMENTAL_CANDIDATE_COUNT = 8;
+
+// 补充来源配额较低，避免卡片过多，也控制翻译量
+const SUPPLEMENTAL_SOURCES = new Set([
+    'DW',
+    'France 24',
+    'CNA',
+    'SCMP',
+    'BBC 中文',
+    'DW 中文',
+    'RFI 中文',
+    'CityNews Toronto',
+    'Globe and Mail',
+    'IT之家',
+    'CNBC',
+    'The Verge',
+]);
+
+export function getDisplayCount(source) {
+    return SUPPLEMENTAL_SOURCES.has(source) ? SUPPLEMENTAL_DISPLAY_COUNT : DISPLAY_COUNT_PER_SOURCE;
+}
+
+export function getCandidateCount(source) {
+    return SUPPLEMENTAL_SOURCES.has(source) ? SUPPLEMENTAL_CANDIDATE_COUNT : CORE_CANDIDATE_COUNT;
+}
 
 /**
  * 按来源分组生成展示列表与替补池
@@ -33,11 +60,9 @@ export function buildFeed(items, deletedIds = []) {
     for (const [source, sourceItems] of groups) {
         // 微博热搜跳过前 3 条置顶内容
         const usable = source === WEIBO_SOURCE ? sourceItems.slice(WEIBO_PINNED_COUNT) : sourceItems;
-        displayed.push(...usable.slice(0, DISPLAY_COUNT_PER_SOURCE));
-        reserve[source] = usable.slice(
-            DISPLAY_COUNT_PER_SOURCE,
-            DISPLAY_COUNT_PER_SOURCE + RESERVE_COUNT_PER_SOURCE
-        );
+        const displayCount = getDisplayCount(source);
+        displayed.push(...usable.slice(0, displayCount));
+        reserve[source] = usable.slice(displayCount, displayCount + RESERVE_COUNT_PER_SOURCE);
     }
 
     return { displayed, reserve };

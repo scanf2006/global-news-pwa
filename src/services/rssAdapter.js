@@ -1,15 +1,46 @@
 import Parser from 'rss-parser';
-import { generateStableId, isLikelyUsefulTitle } from './serviceUtils';
+import { fetchWithTimeout, generateStableId, isLikelyUsefulTitle } from './serviceUtils';
 
-// 初始化 RSS 解析器（rss-parser 内置请求，通过 timeout 与 headers 选项配置）
-const parser = new Parser({
-    timeout: 6000,
-    headers: {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36',
-        Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
-    },
-});
+const parser = new Parser();
+const FEED_TIMEOUT_MS = 6000;
+const FEED_HEADERS = {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36',
+    Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+};
+const GOOGLE_NEWS_GAP_MS = 350;
+const GOOGLE_NEWS_RETRY_MS = 1200;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let googleNewsQueue = Promise.resolve();
+
+// 多个来源共用 Google News，错开请求以降低 429 概率
+function waitForGoogleNewsTurn() {
+    const turn = googleNewsQueue.then(() => sleep(GOOGLE_NEWS_GAP_MS));
+    googleNewsQueue = turn;
+    return turn;
+}
+
+async function fetchFeed(feedUrl) {
+    const isGoogleNews = feedUrl.includes('news.google.com');
+
+    for (let attempt = 0; ; attempt += 1) {
+        if (isGoogleNews) {
+            await waitForGoogleNewsTurn();
+        }
+
+        const response = await fetchWithTimeout(feedUrl, { headers: FEED_HEADERS }, FEED_TIMEOUT_MS);
+        if (response.status === 429 && isGoogleNews && attempt === 0) {
+            await sleep(GOOGLE_NEWS_RETRY_MS);
+            continue;
+        }
+        if (!response.ok) {
+            throw new Error(`状态码 ${response.status}`);
+        }
+
+        return parser.parseString(await response.text());
+    }
+}
 
 const googleNews = (query) =>
     `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-CA&gl=CA&ceid=CA:en`;
@@ -20,15 +51,28 @@ const RSS_FEEDS = {
     'New York Times': ['https://rss.nytimes.com/services/xml/rss/nyt/World.xml'],
     'The Guardian': ['https://www.theguardian.com/world/rss'],
     'Al Jazeera': ['https://www.aljazeera.com/xml/rss/all.xml'],
+    DW: ['https://rss.dw.com/rdf/rss-en-world'],
+    'France 24': ['https://www.france24.com/en/rss'],
+    CNA: ['https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml'],
+    SCMP: ['https://www.scmp.com/rss/91/feed'],
+    'BBC 中文': ['https://feeds.bbci.co.uk/zhongwen/simp/rss.xml'],
+    'DW 中文': ['https://rss.dw.com/rdf/rss-chi-all'],
+    'RFI 中文': ['https://www.rfi.fr/cn/rss'],
     CNN: [googleNews('site:cnn.com when:1d')],
     'CBS News': ['https://www.cbsnews.com/latest/rss/main'],
     'CBC Toronto': ['https://www.cbc.ca/cmlink/rss-canada-toronto'],
     'Global News': ['https://globalnews.ca/toronto/feed/'],
+    'CityNews Toronto': ['https://toronto.citynews.ca/feed/'],
+    'Globe and Mail': ['https://www.theglobeandmail.com/arc/outboundfeeds/rss/category/canada/'],
+    // 官方 RSS 常返回 429，优先使用 Google News
     'Toronto Star': [
-        'https://www.thestar.com/search/?f=rss&t=article&s=start_time&sd=desc&l=10',
         googleNews('site:thestar.com toronto when:2d'),
+        'https://www.thestar.com/search/?f=rss&t=article&s=start_time&sd=desc&l=10',
     ],
     CP24: [googleNews('site:cp24.com when:2d')],
+    'IT之家': ['https://www.ithome.com/rss/'],
+    CNBC: ['https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362'],
+    'The Verge': ['https://www.theverge.com/rss/index.xml'],
 };
 
 // Google News 标题末尾带“ - 媒体名”，去掉后才能与其他来源正确合并
@@ -55,7 +99,7 @@ export const RSSAdapter = {
 
         for (const feedUrl of feedUrls) {
             try {
-                const feed = await parser.parseURL(feedUrl);
+                const feed = await fetchFeed(feedUrl);
                 const items = [...feed.items]
                     .sort((a, b) => getItemTime(b) - getItemTime(a))
                     .map((item) => ({ ...item, title: stripPublisherSuffix(item.title, feedUrl) }))

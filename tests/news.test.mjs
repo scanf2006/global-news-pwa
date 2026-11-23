@@ -5,13 +5,14 @@ import {
     buildFeed,
     countNewItems,
     filterNews,
+    getCandidateCount,
     removeFromFeed,
     restoreToFeed,
 } from '../src/lib/feedModel.js';
 import { createStaleWhileRevalidate } from '../src/lib/staleWhileRevalidate.js';
 import { computeHotScore, limitItemsPerSource, parseViewCount } from '../src/services/newsRanking.js';
 import { applySourceResults, updateSourceHealth } from '../src/services/newsSources.js';
-import { classifyTopic, getRegion } from '../src/services/newsTaxonomy.js';
+import { classifyItemTopic, classifyTopic, getRegion, getRegions } from '../src/services/newsTaxonomy.js';
 import {
     dedupeNewsItems,
     mergeSimilarNewsItems,
@@ -239,6 +240,26 @@ test('地区和主题分类', () => {
     assert.equal(classifyTopic('Raptors win in overtime'), '体育');
     assert.equal(classifyTopic('Inflation slows in October'), '财经');
     assert.equal(classifyTopic('Said it was fine'), '其他');
+});
+
+test('新增来源的地区和默认主题', () => {
+    assert.deepEqual(getRegions('CityNews Toronto'), ['多伦多', '加拿大']);
+    assert.deepEqual(getRegions('Globe and Mail'), ['加拿大']);
+    assert.deepEqual(getRegions('IT之家'), ['中国']);
+    assert.equal(classifyItemTopic({ source: 'The Verge', titleOriginal: 'Said it was fine' }), '科技');
+    assert.equal(classifyItemTopic({ source: 'CNBC', titleOriginal: 'Raptors win in overtime' }), '体育');
+    assert.equal(classifyItemTopic({ source: 'DW', titleOriginal: 'Said it was fine' }), '其他');
+});
+
+test('补充来源使用较低的展示和候选配额', () => {
+    const items = Array.from({ length: 10 }, (_, index) => ({ id: `d${index}`, source: 'DW' }));
+    const core = Array.from({ length: 10 }, (_, index) => ({ id: `b${index}`, source: 'BBC News' }));
+    const feed = buildFeed([...items, ...core]);
+    assert.equal(feed.displayed.filter((item) => item.source === 'DW').length, 3);
+    assert.equal(feed.displayed.filter((item) => item.source === 'BBC News').length, 5);
+    assert.equal(getCandidateCount('DW'), 8);
+    assert.equal(getCandidateCount('BBC News'), 18);
+    assert.equal(limitItemsPerSource(items, getCandidateCount).length, 8);
 });
 
 test('删除补位后可撤销', () => {

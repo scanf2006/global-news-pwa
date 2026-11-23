@@ -1,9 +1,10 @@
+import { getCandidateCount } from '@/lib/feedModel';
 import { readShared, writeShared } from '@/lib/sharedStore';
 import { createStaleWhileRevalidate } from '@/lib/staleWhileRevalidate';
 import { limitItemsPerSource, rankNewsItems } from './newsRanking';
 import { dedupeNewsItems, mergeSimilarNewsItems, normalizeNewsItems } from './newsNormalizer';
 import { applySourceResults, updateSourceHealth, withDeadline } from './newsSources';
-import { classifyTopic, getRegion } from './newsTaxonomy';
+import { classifyItemTopic, getRegion, getRegions } from './newsTaxonomy';
 import { RSSAdapter } from './rssAdapter';
 import { RedditAdapter } from './redditAdapter';
 import { TWITTER_SOURCE } from './serviceUtils';
@@ -17,7 +18,6 @@ const NEWS_MAX_STALE_MS = 6 * 60 * 60 * 1000; // 6 小时内可先返回旧数�
 const REFRESH_COOLDOWN_MS = 60 * 1000;
 const SOURCE_RETENTION_MS = 6 * 60 * 60 * 1000;
 const SOURCE_DEADLINE_MS = 12 * 1000;
-const MAX_ITEMS_PER_SOURCE = 18; // 展示 5 条 + 替补 10 条 + 微博跳过的 3 条
 const TRANSLATED_MERGE_THRESHOLD = 0.6;
 const SHARED_SNAPSHOT_KEY = 'news:snapshot:v1';
 const SHARED_SNAPSHOT_TTL_SECONDS = 24 * 60 * 60;
@@ -65,8 +65,8 @@ function toClientItem(item) {
         views: item.views || null,
         hotScore: item.hotScore,
         region: getRegion(item.source),
-        regions: [...new Set((item.sourceList || [item.source]).map(getRegion))],
-        topic: classifyTopic(item.titleOriginal, item.titleTranslated),
+        regions: [...new Set((item.sourceList || [item.source]).flatMap(getRegions))],
+        topic: classifyItemTopic(item),
     };
 }
 
@@ -86,7 +86,7 @@ async function aggregateNews(previous) {
     const validNews = dedupeNewsItems(Object.values(snapshots).flatMap(({ items }) => items));
     const candidates = limitItemsPerSource(
         rankNewsItems(mergeSimilarNewsItems(validNews), now),
-        MAX_ITEMS_PER_SOURCE
+        getCandidateCount
     );
 
     try {

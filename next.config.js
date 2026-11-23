@@ -28,6 +28,8 @@ const nextConfig = {
         optimizePackageImports: ['@/components', '@/lib', '@/services'],
     },
     poweredByHeader: false,
+    // 该包经 webpack 打包后无法运行，需保持为服务端外部依赖
+    serverExternalPackages: ['google-translate-api-x'],
     async headers() {
         return [
             {

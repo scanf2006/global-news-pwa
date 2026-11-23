@@ -1,3 +1,4 @@
+import { getDisplayCount } from '../lib/feedModel.js';
 import { readShared, writeShared } from '../lib/sharedStore.js';
 import { containsCjk, fetchWithTimeout } from './serviceUtils.js';
 
@@ -7,6 +8,10 @@ const TRANSLATION_REQUEST_TIMEOUT_MS = 3000;
 const TRANSLATION_BUDGET_MS = 8000;
 const OFFICIAL_BATCH_SIZE = 50;
 const OFFICIAL_TIMEOUT_MS = 6000;
+const DISPLAY_PRIORITY_OFFSET = 100;
+const FREE_BATCH_SIZE = 25;
+const FREE_BATCH_CONCURRENCY = 3;
+const BATCH_REQUEST_TIMEOUT_MS = 4000;
 const SHARED_TRANSLATIONS_KEY = 'news:translations:v1';
 const SHARED_TRANSLATIONS_TTL_SECONDS = 30 * 24 * 60 * 60;
 
@@ -76,7 +81,8 @@ async function translateWithOfficialApi(texts) {
 }
 
 async function translateWithGoogleApiX(text) {
-    const { translate } = await import('google-translate-api-x');
+    const translationModule = await import('google-translate-api-x');
+    const translate = translationModule.translate || translationModule.default?.translate;
     let timeoutId;
     const timeout = new Promise((_, reject) => {
         timeoutId = setTimeout(
@@ -114,6 +120,71 @@ async function translateWithGoogleEndpoint(text) {
     );
 }
 
+async function translateBatchWithGoogleEndpoint(texts) {
+    const response = await fetchWithTimeout(
+        'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-CN&dt=t',
+        {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json,text/plain,*/*',
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                'User-Agent': 'Mozilla/5.0',
+            },
+            body: new URLSearchParams({
+                q: texts.map((text) => text.replace(/\s+/g, ' ').trim()).join('\n'),
+            }),
+        },
+        BATCH_REQUEST_TIMEOUT_MS
+    );
+
+    if (!response.ok) {
+        throw new Error(`状态码 ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const lines = (payload?.[0] || [])
+        .map((segment) => segment?.[0] || '')
+        .join('')
+        .split('\n')
+        .map((line) => line.trim());
+
+    // 行数对不上时无法确认译文归属，交给逐条翻译
+    if (lines.length !== texts.length || lines.some((line) => !line)) {
+        return new Map();
+    }
+    return new Map(texts.map((text, index) => [text, lines[index]]));
+}
+
+/**
+ * 按行批量翻译，减少请求数量并降低被限流的概率
+ */
+async function translateInBatches(texts, deadline) {
+    const translated = new Map();
+    const batches = [];
+    for (let index = 0; index < texts.length; index += FREE_BATCH_SIZE) {
+        batches.push(texts.slice(index, index + FREE_BATCH_SIZE));
+    }
+
+    for (let index = 0; index < batches.length; index += FREE_BATCH_CONCURRENCY) {
+        if (Date.now() >= deadline) {
+            break;
+        }
+
+        const results = await Promise.allSettled(
+            batches.slice(index, index + FREE_BATCH_CONCURRENCY).map(translateBatchWithGoogleEndpoint)
+        );
+        for (const result of results) {
+            if (result.status === 'fulfilled') {
+                result.value.forEach((value, key) => translated.set(key, value));
+            } else {
+                console.warn('[Translation] 批量翻译失败，回退逐条翻译:', result.reason?.message);
+            }
+        }
+    }
+
+    return translated;
+}
+
 async function translateText(text) {
     try {
         const translated = await translateWithGoogleApiX(text);
@@ -149,7 +220,9 @@ export async function translateItems(items) {
         } else if (translationCache.has(item.titleOriginal)) {
             item.titleTranslated = translationCache.get(item.titleOriginal);
         } else {
-            queue.push({ item, position });
+            // 首屏展示的条目优先翻译，替补条目排在后面
+            const isDisplayed = position < getDisplayCount(item.source);
+            queue.push({ item, position: isDisplayed ? position : position + DISPLAY_PRIORITY_OFFSET });
         }
     }
 
@@ -159,17 +232,25 @@ export async function translateItems(items) {
         ...new Set(ordered.map((item) => item.titleOriginal)),
     ]);
 
-    const remaining = ordered.filter((item) => {
-        const translated = official.get(item.titleOriginal);
-        if (!translated) {
-            return true;
-        }
-        setCachedTranslation(item.titleOriginal, translated);
-        item.titleTranslated = translated;
-        return false;
-    });
+    const applyTranslations = (pending, translations) =>
+        pending.filter((item) => {
+            const translated = translations.get(item.titleOriginal);
+            if (!translated) {
+                return true;
+            }
+            setCachedTranslation(item.titleOriginal, translated);
+            item.titleTranslated = translated;
+            return false;
+        });
 
     const deadline = Date.now() + TRANSLATION_BUDGET_MS;
+    const afterOfficial = applyTranslations(ordered, official);
+    const batched = await translateInBatches(
+        [...new Set(afterOfficial.map((item) => item.titleOriginal))],
+        deadline
+    );
+    const remaining = applyTranslations(afterOfficial, batched);
+
     for (let index = 0; index < remaining.length; index += TRANSLATION_CONCURRENCY) {
         if (Date.now() >= deadline) {
             console.warn(`[Translation] 超出时间预算，剩余 ${remaining.length - index} 条保留原文`);

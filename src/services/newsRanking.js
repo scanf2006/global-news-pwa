@@ -61,14 +61,15 @@ export function rankNewsItems(items, now = Date.now()) {
 }
 
 /**
- * 限制每个主来源返回的条目数量
+ * 限制每个主来源返回的条目数量，maxPerSource 可按来源传入函数
  */
 export function limitItemsPerSource(items, maxPerSource) {
     const counts = new Map();
+    const getLimit = typeof maxPerSource === 'function' ? maxPerSource : () => maxPerSource;
 
     return items.filter((item) => {
         const count = counts.get(item.source) || 0;
         counts.set(item.source, count + 1);
-        return count < maxPerSource;
+        return count < getLimit(item.source);
     });
 }
